@@ -1,0 +1,63 @@
+name: Deploy SaaS Inventory
+
+on:
+  push:
+    branches: [ main ] # Se ejecuta al hacer push a la rama principal
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+    
+    # 1. Descargar el código del repositorio
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+
+    # 2. Copiar archivos al VPS
+    - name: 🚚 Copy files via SCP
+      uses: appleboy/scp-action@master
+      with:
+        host: ${{ secrets.VPS_HOST }}
+        username: ${{ secrets.VPS_USER }}
+        key: ${{ secrets.VPS_SSH_KEY }}
+        source: "."
+        # Cambiamos la carpeta destino a una exclusiva para este proyecto
+        target: "/root/apps/saas-inventory"
+
+    # 3. Entrar y Ejecutar Docker
+    - name: 🚀 Deploy via SSH
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.VPS_HOST }}
+        username: ${{ secrets.VPS_USER }}
+        key: ${{ secrets.VPS_SSH_KEY }}
+        script: |
+          # Crear carpeta si no existe
+          mkdir -p /root/apps/saas-inventory
+          
+          # Entrar al directorio
+          cd /root/apps/saas-inventory
+          
+          # --- INYECCIÓN DE SECRETOS ---
+          
+          # 1. Archivo .env
+          echo "${{ secrets.ENV_FILE_INVETORY }}" > .env
+          
+          # 2. Credencial de la App (Client Secret)
+          echo '${{ secrets.CLIENT_SECRET_JSON }}' > client_secret.json
+          
+          # 3. Token de Sesión (VITAL para evitar login manual)
+          echo '${{ secrets.TOKEN_JSON }}' > token.json
+          
+          # --- REINICIO DEL SERVICIO ---
+          
+          echo "🔄 Desplegando SaaS Inventory..."
+          
+          # Bajar contenedores viejos
+          docker compose down
+          
+          # Construir y levantar
+          docker compose up -d --build
+          
+          # Limpiar basura de Docker
+          docker image prune -f
