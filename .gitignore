@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual Environment
+venv/
+env/
+.env/
+.venv/
+
+# Environment Variables
+.env
+
+# Google Credentials (sensitive)
+client_secret.json
+token.json
+credentials.json
+
+# Logs
+*.log
+
+# IDEs
+.vscode/
+.idea/

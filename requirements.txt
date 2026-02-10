@@ -1,0 +1,8 @@
+fastapi
+uvicorn[standard]
+gspread
+oauth2client
+groq
+python-dotenv
+pydantic-settings
+python-telegram-bot
