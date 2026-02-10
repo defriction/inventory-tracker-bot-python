@@ -41,7 +41,7 @@ jobs:
           # --- INYECCIÓN DE SECRETOS ---
           
           # 1. Archivo .env
-          echo "${{ secrets.ENV_FILE_INVETORY }}" > .env
+          echo "${{ secrets.ENV_FILE_INVENTORY }}" > .env
           
           # 2. Credencial de la App (Client Secret)
           echo '${{ secrets.CLIENT_SECRET_JSON }}' > client_secret.json
