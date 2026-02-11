@@ -36,10 +36,17 @@ async def send_telegram_message(chat_id: str, text: str):
             # Esto lanzará una excepción si Telegram devuelve 400 (Bad Request) o 500
             response.raise_for_status()
         except httpx.HTTPStatusError as e:
-            logger.error(f"❌ Telegram rechazó el mensaje: {e.response.text}")
-            # FALLBACK: Intentar enviar sin formato Markdown por si hubo un error de sintaxis
-            fallback_text = f"⚠️ Error de formato en respuesta:\n{text}"
-            await client.post(url, json={"chat_id": chat_id, "text": fallback_text})
+            if e.response.status_code == 401:
+                logger.critical("🚨 ERROR CRÍTICO: Telegram dice 'Unauthorized'. Tu TOKEN es inválido.")
+                # Mostramos los primeros 5 caracteres para que verifiques si es el correcto
+                masked_token = settings.TELEGRAM_BOT_TOKEN[:5] + "..." if settings.TELEGRAM_BOT_TOKEN else "VACÍO"
+                logger.critical(f"🔍 El sistema está usando el token que empieza por: '{masked_token}'")
+                logger.critical("👉 Verifica tu archivo .env o tus Secretos de GitHub.")
+            else:
+                logger.error(f"❌ Telegram rechazó el mensaje: {e.response.text}")
+                # FALLBACK: Intentar enviar sin formato Markdown por si hubo un error de sintaxis
+                fallback_text = f"⚠️ Error de formato en respuesta:\n{text}"
+                await client.post(url, json={"chat_id": chat_id, "text": fallback_text})
         except Exception as e:
             logger.error(f"❌ Error de conexión enviando a Telegram: {e}")
         
