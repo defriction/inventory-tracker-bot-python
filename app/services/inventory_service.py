@@ -82,14 +82,14 @@ class InventoryService:
             if action == "CREAR":
                 if row_idx:
                     logger.warning(f"⚠️ Intento de crear producto duplicado: {real_name}")
-                    response_text = f"⚠️ Ya encontré un producto similar: **{real_name}**. Usa otro nombre si es diferente."
+                    response_text = f"⚠️ Ya encontré un producto similar: *{self._escape(real_name)}*. Usa otro nombre si es diferente."
                 else:
                     # AHORA PASAMOS LA FECHA DE VENCIMIENTO A LA FUNCIÓN
                     response_text = self._create_product(product_name, price, qty, user_name, category, unit, expiration_date, location, purchase_price)
             
             # Para el resto de acciones el producto DEBE existir
             elif not row_idx:
-                response_text = f"❌ No encontré nada relacionado con '{product_name}' en tu inventario."
+                response_text = f"❌ No encontré nada relacionado con '{self._escape(product_name)}' en tu inventario."
 
             elif action == "VENTA":
                 response_text = self._handle_sale(row_idx, real_name, qty, user_name)
@@ -117,6 +117,17 @@ class InventoryService:
     # ==========================================
     # MÉTODOS PRIVADOS (Lógica Interna)
     # ==========================================
+
+    def _escape(self, text) -> str:
+        """Escapa caracteres especiales para evitar errores de MarkdownV2 en Telegram"""
+        if text is None:
+            return ""
+        text = str(text)
+        # Lista oficial de caracteres reservados en MarkdownV2
+        chars = ['_', '*', '[', ']', '(', ')', '~', '`', '>', '#', '+', '-', '=', '|', '{', '}', '.', '!']
+        for c in chars:
+            text = text.replace(c, f"\\{c}")
+        return text
 
     def _normalize(self, text: str) -> str:
         """Elimina acentos y convierte a minúsculas para comparaciones robustas"""
@@ -185,16 +196,16 @@ class InventoryService:
             self._log_movement("CREACION", sku, name, initial_stock, user, "Stock Inicial")
 
         # Formatear mensaje de respuesta
-        exp_msg = f" | 📅 Vence: {expiration_date}" if expiration_date else ""
-        loc_msg = f"\n📍 Ubicación: {location}" if location else ""
+        exp_msg = f" \| 📅 Vence: {self._escape(expiration_date)}" if expiration_date else ""
+        loc_msg = f"\n📍 Ubicación: {self._escape(location)}" if location else ""
 
-        return (f"🆕 **Producto Creado**\n"
-                f"📦 {name}\n"
-                f"📂 Cat: {category} | 📏 Unidad: {unit}\n"
-                f"💰 Costo: ${cost_val}\n"
-                f"💲 Precio: ${price_val}{exp_msg}\n"
+        return (f"🆕 *Producto Creado*\n"
+                f"📦 {self._escape(name)}\n"
+                f"📂 Cat: {self._escape(category)} \| 📏 Unidad: {self._escape(unit)}\n"
+                f"💰 Costo: ${self._escape(cost_val)}\n"
+                f"💲 Precio: ${self._escape(price_val)}{exp_msg}\n"
                 f"{loc_msg}"
-                f"🔢 Stock inicial: {initial_stock}")
+                f"🔢 Stock inicial: {self._escape(initial_stock)}")
 
     def _handle_sale(self, row_idx, name, qty, user):
         """Procesa venta"""
@@ -203,7 +214,7 @@ class InventoryService:
         
         if current_stock < qty:
             logger.warning(f"⚠️ Stock insuficiente para {name}. Actual: {current_stock}, Solicitado: {qty}")
-            return f"⚠️ **Stock Insuficiente**\nProducto: {name}\nTienes: {current_stock}\nIntentas vender: {qty}"
+            return f"⚠️ *Stock Insuficiente*\nProducto: {self._escape(name)}\nTienes: {current_stock}\nIntentas vender: {qty}"
 
         new_stock = current_stock - qty
         self.inventory_sheet.update_cell(row_idx, 5, new_stock)
@@ -211,7 +222,7 @@ class InventoryService:
         sku = self.inventory_sheet.cell(row_idx, 2).value
         self._log_movement("VENTA", sku, name, -qty, user)
 
-        return f"✅ **Venta Registrada**\n🔻 {name}\nStock: {current_stock} ➡ {new_stock}"
+        return f"✅ *Venta Registrada*\n🔻 {self._escape(name)}\nStock: {current_stock} ➡ {new_stock}"
 
     def _handle_purchase(self, row_idx, name, qty, user):
         """Procesa compra"""
@@ -224,7 +235,7 @@ class InventoryService:
         sku = self.inventory_sheet.cell(row_idx, 2).value
         self._log_movement("COMPRA", sku, name, qty, user)
 
-        return f"✅ **Entrada Registrada**\n🟢 {name}\nStock: {current_stock} ➡ {new_stock}"
+        return f"✅ *Entrada Registrada*\n🟢 {self._escape(name)}\nStock: {current_stock} ➡ {new_stock}"
 
     def _handle_query(self, row_idx, name):
         """Consulta datos, incluyendo vencimiento"""
@@ -246,15 +257,15 @@ class InventoryService:
         location = values[9] if len(values) > 9 else ""
         logger.info(f"📊 Datos parseados - SKU: {sku}, Stock: {stock}, Precio: {price}, Vence: {expiration}, Ubic: {location}")
 
-        exp_msg = f"\n📅 Vence: {expiration}" if expiration else ""
-        loc_msg = f"\n📍 Ubicación: {location}" if location else ""
+        exp_msg = f"\n📅 Vence: {self._escape(expiration)}" if expiration else ""
+        loc_msg = f"\n📍 Ubicación: {self._escape(location)}" if location else ""
 
-        return (f"📦 **Consulta de Inventario**\n"
-                f"📝 Producto: {name}\n"
-                f"📂 Cat: {category} | 🏷 SKU: {sku}\n"
-                f"🔢 Stock: {stock} {unit}\n"
-                f"💰 Costo: ${cost}\n"
-                f"💲 Precio: ${price}"
+        return (f"📦 *Consulta de Inventario*\n"
+                f"📝 Producto: {self._escape(name)}\n"
+                f"📂 Cat: {self._escape(category)} \| 🏷 SKU: {self._escape(sku)}\n"
+                f"🔢 Stock: {self._escape(stock)} {self._escape(unit)}\n"
+                f"💰 Costo: ${self._escape(cost)}\n"
+                f"💲 Precio: ${self._escape(price)}"
                 f"{exp_msg}{loc_msg}")
 
     def _update_product(self, row_idx, current_name, intent, user):
@@ -267,13 +278,13 @@ class InventoryService:
         new_price = intent.get('precio')
         if new_price is not None:
             self.inventory_sheet.update_cell(row_idx, 8, new_price)
-            updates.append(f"Precio: ${new_price}")
+            updates.append(f"Precio: ${self._escape(new_price)}")
 
         # 1.1 Costo (Columna G -> 7)
         new_cost = intent.get('precio_compra')
         if new_cost is not None:
             self.inventory_sheet.update_cell(row_idx, 7, new_cost)
-            updates.append(f"Costo: ${new_cost}")
+            updates.append(f"Costo: ${self._escape(new_cost)}")
 
         # 2. Stock / Cantidad (Columna E -> 5) - CORRECCIÓN DE INVENTARIO
         new_stock = intent.get('cantidad')
@@ -281,31 +292,31 @@ class InventoryService:
             self.inventory_sheet.update_cell(row_idx, 5, int(new_stock))
             sku = self.inventory_sheet.cell(row_idx, 2).value
             self._log_movement("AJUSTE", sku, current_name, int(new_stock), user, "Corrección Manual")
-            updates.append(f"Stock: {new_stock}")
+            updates.append(f"Stock: {self._escape(new_stock)}")
 
         # 3. Categoría (Columna D -> 4)
         new_cat = intent.get('categoria')
         if new_cat:
             self.inventory_sheet.update_cell(row_idx, 4, new_cat.title())
-            updates.append(f"Cat: {new_cat}")
+            updates.append(f"Cat: {self._escape(new_cat)}")
 
         # 4. Fecha Vencimiento (Columna I -> 9)
         new_exp = intent.get('fecha_vencimiento')
         if new_exp:
             self.inventory_sheet.update_cell(row_idx, 9, new_exp)
-            updates.append(f"Vence: {new_exp}")
+            updates.append(f"Vence: {self._escape(new_exp)}")
             
         # 6. Ubicación (Columna J -> 10)
         new_loc = intent.get('ubicacion')
         if new_loc:
             self.inventory_sheet.update_cell(row_idx, 10, new_loc)
-            updates.append(f"Ubicación: {new_loc}")
+            updates.append(f"Ubicación: {self._escape(new_loc)}")
 
         # 5. Nuevo Nombre (Columna C -> 3)
         new_name = intent.get('nuevo_nombre')
         if new_name:
             self.inventory_sheet.update_cell(row_idx, 3, new_name)
-            updates.append(f"Nombre: {new_name}")
+            updates.append(f"Nombre: {self._escape(new_name)}")
             current_name = new_name # Para el mensaje final
             
         # 7. SKU (Columna B -> 2)
@@ -313,12 +324,12 @@ class InventoryService:
         if new_sku:
             new_sku = str(new_sku).upper() # Forzamos mayúsculas
             self.inventory_sheet.update_cell(row_idx, 2, new_sku)
-            updates.append(f"SKU: {new_sku}")
+            updates.append(f"SKU: {self._escape(new_sku)}")
 
         if not updates:
-            return f"⚠️ Entendí que quieres actualizar **{current_name}**, pero no me dijiste qué cambiar (precio, stock, etc)."
+            return f"⚠️ Entendí que quieres actualizar *{self._escape(current_name)}*, pero no me dijiste qué cambiar (precio, stock, etc)."
 
-        return f"✅ **Producto Actualizado**\n📝 {current_name}\nCambios: {', '.join(updates)}"
+        return f"✅ *Producto Actualizado*\n📝 {self._escape(current_name)}\nCambios: {', '.join(updates)}"
 
     def _log_movement(self, mov_type, sku, name, qty, user, notes=""):
         """Auditoría"""
