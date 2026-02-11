@@ -97,12 +97,12 @@ class TenantService:
             cell = self.admin_sheet.find(token)
             
             if not cell:
-                return False, "❌ Token inválido o no encontrado."
+                return False, "❌ Token inválido o no encontrado\."
             
             # Verificar si ya tiene dueño (Columna A)
             current_owner = self.admin_sheet.cell(cell.row, 1).value
             if current_owner and current_owner.strip() != "":
-                return False, "⛔ Este código ya fue usado."
+                return False, "⛔ Este código ya fue usado\."
 
             # Registrar al usuario
             self.admin_sheet.update_cell(cell.row, 1, str(telegram_id))
@@ -117,4 +117,4 @@ class TenantService:
 
         except Exception as e:
             logger.error(f"Error vinculando: {e}")
-            return False, "Error técnico al vincular cuenta."
+            return False, "Error técnico al vincular cuenta\."

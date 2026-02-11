@@ -1,9 +1,19 @@
 import httpx
+import logging
+import sys
 from fastapi import APIRouter, Request, BackgroundTasks
 from app.core.config import settings
 from app.services.tenant_service import TenantService
 from app.services.inventory_service import InventoryService
 from app.services.ia_service import interpret_intent
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
+if not logger.handlers:
+    handler = logging.StreamHandler(sys.stdout)
+    handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
+    logger.addHandler(handler)
 
 router = APIRouter(
     prefix='/webhook',
@@ -74,7 +84,7 @@ async def process_telegram_update(data: dict):
         await send_telegram_message(chat_id, response_text)
 
     except Exception as e:
-        print(f"❌ Error procesando webhook: {e}")
+        logger.error(f"❌ Error procesando webhook: {e}")
         # Opcional: Enviar mensaje de error al usuario si es crítico
 
 # --- ENDPOINT PÚBLICO ---

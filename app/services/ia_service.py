@@ -79,8 +79,8 @@ def interpret_intent(user_text: str) -> dict:
     - Si no menciona fecha, devuelve null o string vacío.
     
     EJEMPLOS:
-    - "Crea Leche Colanta vence el 15/10/2026" -> {{..., "fecha_vencimiento": "2026-10-15"}}
-    - "Crea Yogurt vence el 30 de diciembre" -> {{..., "fecha_vencimiento": "2026-12-30"}} (Calculando año)
+    - "Crea Leche Colanta vence el 15/10/2026" -> {..., "fecha_vencimiento": "2026-10-15"}
+    - "Crea Yogurt vence el 30 de diciembre" -> {..., "fecha_vencimiento": "2026-12-30"} (Calculando año)
     """
 
     try:

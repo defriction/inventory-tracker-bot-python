@@ -56,11 +56,11 @@ class InventoryService:
 
         if action == "DESCONOCIDO":
             logger.warning("⚠️ Acción desconocida recibida")
-            return "🤷‍♂️ No entendí qué quieres hacer. Intenta: 'Vendí 2 articulos'."
+            return "🤷‍♂️ No entendí qué quieres hacer\. Intenta: 'Vendí 2 articulos'\."
         
         if not product_name and action != "DESCONOCIDO":
             logger.warning("⚠️ Falta nombre del producto en la instrucción")
-            return "❌ Necesito que me digas el nombre del producto."
+            return "❌ Necesito que me digas el nombre del producto\."
 
         try:
             # 1. BUSCAR EL PRODUCTO (Lógica de Keywords)
@@ -82,14 +82,14 @@ class InventoryService:
             if action == "CREAR":
                 if row_idx:
                     logger.warning(f"⚠️ Intento de crear producto duplicado: {real_name}")
-                    response_text = f"⚠️ Ya encontré un producto similar: *{self._escape(real_name)}*. Usa otro nombre si es diferente."
+                    response_text = f"⚠️ Ya encontré un producto similar: *{self._escape(real_name)}*\. Usa otro nombre si es diferente\."
                 else:
                     # AHORA PASAMOS LA FECHA DE VENCIMIENTO A LA FUNCIÓN
                     response_text = self._create_product(product_name, price, qty, user_name, category, unit, expiration_date, location, purchase_price)
             
             # Para el resto de acciones el producto DEBE existir
             elif not row_idx:
-                response_text = f"❌ No encontré nada relacionado con '{self._escape(product_name)}' en tu inventario."
+                response_text = f"❌ No encontré nada relacionado con '{self._escape(product_name)}' en tu inventario\."
 
             elif action == "VENTA":
                 response_text = self._handle_sale(row_idx, real_name, qty, user_name)
@@ -109,10 +109,10 @@ class InventoryService:
 
         except Exception as e:
             logger.error(f"Error procesando accion: {e}")
-            return "💥 Ocurrió un error técnico actualizando tu Excel."
+            return "💥 Ocurrió un error técnico actualizando tu Excel\."
 
         logger.warning(f"⚠️ Comando no reconocido: {action}")
-        return "Comando no reconocido."
+        return "Comando no reconocido\."
 
     # ==========================================
     # MÉTODOS PRIVADOS (Lógica Interna)
@@ -214,7 +214,7 @@ class InventoryService:
         
         if current_stock < qty:
             logger.warning(f"⚠️ Stock insuficiente para {name}. Actual: {current_stock}, Solicitado: {qty}")
-            return f"⚠️ *Stock Insuficiente*\nProducto: {self._escape(name)}\nTienes: {current_stock}\nIntentas vender: {qty}"
+            return f"⚠️ *Stock Insuficiente*\nProducto: {self._escape(name)}\nTienes: {self._escape(current_stock)}\nIntentas vender: {self._escape(qty)}"
 
         new_stock = current_stock - qty
         self.inventory_sheet.update_cell(row_idx, 5, new_stock)
@@ -222,7 +222,7 @@ class InventoryService:
         sku = self.inventory_sheet.cell(row_idx, 2).value
         self._log_movement("VENTA", sku, name, -qty, user)
 
-        return f"✅ *Venta Registrada*\n🔻 {self._escape(name)}\nStock: {current_stock} ➡ {new_stock}"
+        return f"✅ *Venta Registrada*\n🔻 {self._escape(name)}\nStock: {self._escape(current_stock)} ➡ {self._escape(new_stock)}"
 
     def _handle_purchase(self, row_idx, name, qty, user):
         """Procesa compra"""
@@ -235,7 +235,7 @@ class InventoryService:
         sku = self.inventory_sheet.cell(row_idx, 2).value
         self._log_movement("COMPRA", sku, name, qty, user)
 
-        return f"✅ *Entrada Registrada*\n🟢 {self._escape(name)}\nStock: {current_stock} ➡ {new_stock}"
+        return f"✅ *Entrada Registrada*\n🟢 {self._escape(name)}\nStock: {self._escape(current_stock)} ➡ {self._escape(new_stock)}"
 
     def _handle_query(self, row_idx, name):
         """Consulta datos, incluyendo vencimiento"""
@@ -327,7 +327,7 @@ class InventoryService:
             updates.append(f"SKU: {self._escape(new_sku)}")
 
         if not updates:
-            return f"⚠️ Entendí que quieres actualizar *{self._escape(current_name)}*, pero no me dijiste qué cambiar (precio, stock, etc)."
+            return f"⚠️ Entendí que quieres actualizar *{self._escape(current_name)}*, pero no me dijiste qué cambiar \(precio, stock, etc\)\."
 
         return f"✅ *Producto Actualizado*\n📝 {self._escape(current_name)}\nCambios: {', '.join(updates)}"
 
