@@ -31,7 +31,17 @@ def escape_markdown_v2(text):
 async def send_telegram_message(chat_id: str, text: str):
     url = f"https://api.telegram.org/bot{settings.TELEGRAM_BOT_TOKEN}/sendMessage"
     async with httpx.AsyncClient() as client:
-        await client.post(url, json={"chat_id": chat_id, "text": text, "parse_mode": "MarkdownV2"})
+        try:
+            response = await client.post(url, json={"chat_id": chat_id, "text": text, "parse_mode": "MarkdownV2"})
+            # Esto lanzará una excepción si Telegram devuelve 400 (Bad Request) o 500
+            response.raise_for_status()
+        except httpx.HTTPStatusError as e:
+            logger.error(f"❌ Telegram rechazó el mensaje: {e.response.text}")
+            # FALLBACK: Intentar enviar sin formato Markdown por si hubo un error de sintaxis
+            fallback_text = f"⚠️ Error de formato en respuesta:\n{text}"
+            await client.post(url, json={"chat_id": chat_id, "text": fallback_text})
+        except Exception as e:
+            logger.error(f"❌ Error de conexión enviando a Telegram: {e}")
         
 async def process_telegram_update(data: dict):
     """Lógica principal del Bot (Procesamiento en segundo plano)"""
