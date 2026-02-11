@@ -69,29 +69,35 @@ class InventoryService:
 
             # --- ENRUTADOR ---
 
+            response_text = None
+
             if action == "CREAR":
                 if row_idx:
                     logger.warning(f"⚠️ Intento de crear producto duplicado: {real_name}")
-                    return f"⚠️ Ya encontré un producto similar: **{real_name}**. Usa otro nombre si es diferente."
-                
-                # AHORA PASAMOS LA FECHA DE VENCIMIENTO A LA FUNCIÓN
-                return self._create_product(product_name, price, qty, user_name, category, unit, expiration_date, location, purchase_price)
+                    response_text = f"⚠️ Ya encontré un producto similar: **{real_name}**. Usa otro nombre si es diferente."
+                else:
+                    # AHORA PASAMOS LA FECHA DE VENCIMIENTO A LA FUNCIÓN
+                    response_text = self._create_product(product_name, price, qty, user_name, category, unit, expiration_date, location, purchase_price)
             
             # Para el resto de acciones el producto DEBE existir
-            if not row_idx:
-                return f"❌ No encontré nada relacionado con '{product_name}' en tu inventario."
+            elif not row_idx:
+                response_text = f"❌ No encontré nada relacionado con '{product_name}' en tu inventario."
 
-            if action == "VENTA":
-                return self._handle_sale(row_idx, real_name, qty, user_name)
+            elif action == "VENTA":
+                response_text = self._handle_sale(row_idx, real_name, qty, user_name)
             
             elif action == "COMPRA":
-                return self._handle_purchase(row_idx, real_name, qty, user_name)
+                response_text = self._handle_purchase(row_idx, real_name, qty, user_name)
             
             elif action == "CONSULTA":
-                return self._handle_query(row_idx, real_name)
+                response_text = self._handle_query(row_idx, real_name)
             
             elif action == "ACTUALIZAR":
-                return self._update_product(row_idx, real_name, intent, user_name)
+                response_text = self._update_product(row_idx, real_name, intent, user_name)
+
+            if response_text:
+                logger.info(f"📤 Respuesta generada para Telegram: {response_text!r}")
+                return response_text
 
         except Exception as e:
             logger.error(f"Error procesando accion: {e}")

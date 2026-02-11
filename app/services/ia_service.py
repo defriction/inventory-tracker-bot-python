@@ -87,6 +87,7 @@ def interpret_intent(user_text: str) -> dict:
         )
         
         response_content = chat_completion.choices[0].message.content
+        logger.info(f"🧠 Raw IA Response: {response_content}")
         data = json.loads(response_content)
         
         return {
