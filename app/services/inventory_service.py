@@ -1,10 +1,18 @@
 import datetime
 import uuid
 import logging
+import sys
 import unicodedata
 from app.core.google_client import get_gs_client
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
+# ⚠️ FORZAR LOGS EN DOCKER: Enviar directo a consola (stdout)
+if not logger.handlers:
+    handler = logging.StreamHandler(sys.stdout)
+    handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
+    logger.addHandler(handler)
 
 class InventoryService:
     def __init__(self, sheet_id: str):

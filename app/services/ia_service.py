@@ -1,10 +1,18 @@
 import json
 import logging
+import sys
 import datetime
 from groq import Groq
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
+# ⚠️ FORZAR LOGS EN DOCKER: Enviar directo a consola (stdout)
+if not logger.handlers:
+    handler = logging.StreamHandler(sys.stdout)
+    handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
+    logger.addHandler(handler)
 
 # Inicializamos el cliente
 client = Groq(api_key=settings.GROQ_API_KEY)
