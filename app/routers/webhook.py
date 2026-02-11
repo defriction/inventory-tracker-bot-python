@@ -10,10 +10,18 @@ router = APIRouter(
     tags=['Integracion Telegram']
 )
 
+def escape_markdown_v2(text):
+    """Escapa caracteres para MarkdownV2"""
+    chars = ['_', '*', '[', ']', '(', ')', '~', '`', '>', '#', '+', '-', '=', '|', '{', '}', '.', '!']
+    text = str(text)
+    for c in chars:
+        text = text.replace(c, f"\\{c}")
+    return text
+
 async def send_telegram_message(chat_id: str, text: str):
     url = f"https://api.telegram.org/bot{settings.TELEGRAM_BOT_TOKEN}/sendMessage"
     async with httpx.AsyncClient() as client:
-        await client.post(url, json={"chat_id": chat_id, "text": text, "parse_mode": "Markdown"})
+        await client.post(url, json={"chat_id": chat_id, "text": text, "parse_mode": "MarkdownV2"})
         
 async def process_telegram_update(data: dict):
     """Lógica principal del Bot (Procesamiento en segundo plano)"""
@@ -38,15 +46,16 @@ async def process_telegram_update(data: dict):
             if text.startswith("/conectar"):
                 parts = text.split()
                 if len(parts) < 2:
-                    await send_telegram_message(chat_id, "⚠️ Debes enviar el token. Ejemplo: `/conectar AB123`")
+                    await send_telegram_message(chat_id, "⚠️ Debes enviar el token\. Ejemplo: `/conectar AB123`")
                     return
                 
                 token = parts[1].strip()
                 success, msg = tenant_service.link_user(str(user_id), token)
                 await send_telegram_message(chat_id, msg)
             else:
+                safe_name = escape_markdown_v2(user_name)
                 await send_telegram_message(chat_id, 
-                    f"👋 Hola {user_name}. No tienes un negocio vinculado.\n"
+                    f"👋 Hola {safe_name}\. No tienes un negocio vinculado\.\n"
                     "Si ya compraste el software, envía tu token así:\n`/conectar TU_CODIGO`"
                 )
             return

@@ -107,8 +107,13 @@ class TenantService:
             # Registrar al usuario
             self.admin_sheet.update_cell(cell.row, 1, str(telegram_id))
             pyme_name = self.admin_sheet.cell(cell.row, 3).value
+
+            # Escapar nombre para MarkdownV2
+            safe_pyme = str(pyme_name)
+            for c in ['_', '*', '[', ']', '(', ')', '~', '`', '>', '#', '+', '-', '=', '|', '{', '}', '.', '!']:
+                safe_pyme = safe_pyme.replace(c, f"\\{c}")
             
-            return True, f"✅ ¡Vinculación exitosa!\nBienvenido a **{pyme_name}**."
+            return True, f"✅ ¡Vinculación exitosa\!\nBienvenido a *{safe_pyme}*\."
 
         except Exception as e:
             logger.error(f"Error vinculando: {e}")
