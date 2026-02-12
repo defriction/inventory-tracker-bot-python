@@ -33,6 +33,7 @@ def interpret_intent(user_text: str) -> dict:
     3. CONSULTA: Preguntar stock, precio o buscar producto.
     4. CREAR: Registrar nuevo producto con precio.
     5. ACTUALIZAR: Modificar datos de un producto existente (precio, stock, nombre, etc).
+    6. LISTAR: Mostrar múltiples productos según un criterio (ubicación, vencimiento, stock bajo, todos).
     5. DESCONOCIDO: Texto sin sentido comercial.
 
     REGLAS DE EXTRACCIÓN:
@@ -70,6 +71,13 @@ def interpret_intent(user_text: str) -> dict:
     - "cantidad": Si se menciona un ajuste de stock (ej: "Hay 50", "Poner stock en 50").
     - "ubicacion": Si menciona cambio de lugar.
     - Ejemplo: "Actualiza precio de Martillo a 30000" -> {"accion": "ACTUALIZAR", "producto": "Martillo", "precio": 30000}
+
+    REGLAS PARA "LISTAR":
+    - "criterio": "ubicacion", "vencimiento", "stock_bajo", "todos".
+    - "ubicacion": Extraer nombre del lugar si el criterio es ubicacion.
+    - Ejemplo: "Qué hay en la Bodega" -> {"accion": "LISTAR", "criterio": "ubicacion", "ubicacion": "Bodega"}
+    - Ejemplo: "Productos por vencer" -> {"accion": "LISTAR", "criterio": "vencimiento"}
+    - Ejemplo: "Qué se está acabando" -> {"accion": "LISTAR", "criterio": "stock_bajo"}
 
     REGLA PARA "FECHA_VENCIMIENTO":
     - Solo si el usuario menciona una fecha explícita de caducidad.
@@ -109,7 +117,8 @@ def interpret_intent(user_text: str) -> dict:
             "categoria": data.get("categoria"), 
             "unidad": data.get("unidad"),      
             "fecha_vencimiento": data.get("fecha_vencimiento"),
-            "ubicacion": data.get("ubicacion")
+            "ubicacion": data.get("ubicacion"),
+            "criterio": data.get("criterio")
         }
 
     except Exception as e:

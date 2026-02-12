@@ -57,6 +57,10 @@ class InventoryService:
         if action == "DESCONOCIDO":
             logger.warning("⚠️ Acción desconocida recibida")
             return "🤷‍♂️ No entendí qué quieres hacer\. Intenta: 'Vendí 2 articulos'\."
+            
+        # --- ACCIÓN LISTAR (No requiere nombre de producto) ---
+        if action == "LISTAR":
+            return self._handle_list(intent)
         
         if not product_name and action != "DESCONOCIDO":
             logger.warning("⚠️ Falta nombre del producto en la instrucción")
@@ -337,3 +341,71 @@ class InventoryService:
         ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         tx_id = str(uuid.uuid4())[:6]
         self.history_sheet.append_row([ts, tx_id, mov_type, sku, name, qty, user, notes])
+
+    def _handle_list(self, intent):
+        """Genera un reporte de productos según criterio"""
+        criterio = intent.get('criterio')
+        loc_filter = intent.get('ubicacion')
+        
+        logger.info(f"📋 Generando lista por criterio: {criterio}")
+        
+        # Obtenemos todos los datos (Cuidado con inventarios gigantes, para PyMEs está bien)
+        rows = self.inventory_sheet.get_all_values()
+        if not rows or len(rows) < 2:
+            return "📭 Tu inventario está vacío\."
+            
+        # Indices (0-based): 2=Nombre, 4=Stock, 8=Vencimiento, 9=Ubicacion
+        results = []
+        today = datetime.date.today()
+        
+        for i, row in enumerate(rows[1:]): # Saltamos header
+            # Asegurar que la fila tenga suficientes columnas
+            if len(row) < 10: continue
+            
+            name = row[2]
+            stock = int(row[4]) if row[4].isdigit() else 0
+            exp_str = row[8]
+            loc = row[9]
+            
+            match = False
+            
+            if criterio == "ubicacion":
+                # Búsqueda parcial (ej: "Estante" coincide con "Estante 1")
+                if loc_filter and self._normalize(loc_filter) in self._normalize(loc):
+                    match = True
+            
+            elif criterio == "stock_bajo":
+                # Umbral fijo de 5 unidades (podría ser configurable)
+                if stock <= 5:
+                    match = True
+                    
+            elif criterio == "vencimiento":
+                if exp_str:
+                    try:
+                        exp_date = datetime.datetime.strptime(exp_str, "%Y-%m-%d").date()
+                        days_diff = (exp_date - today).days
+                        # Listar vencidos o que venzan en próximos 30 días
+                        if days_diff <= 30:
+                            match = True
+                    except:
+                        pass # Fecha inválida, ignorar
+            
+            elif criterio == "todos":
+                match = True
+
+            if match:
+                # Guardamos tupla para mostrar
+                results.append(f"• {self._escape(name)} (Stock: {stock})")
+
+        if not results:
+            return f"🔍 No encontré productos con el criterio: *{criterio}*\."
+            
+        # Limitamos a 15 para no saturar Telegram
+        limit = 15
+        display = results[:limit]
+        msg = f"📋 *Reporte: {criterio.upper()}*\n" + "\n".join(display)
+        
+        if len(results) > limit:
+            msg += f"\n\n_...y {len(results) - limit} más\._"
+            
+        return msg
