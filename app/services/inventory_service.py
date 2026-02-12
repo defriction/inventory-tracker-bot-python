@@ -395,17 +395,17 @@ class InventoryService:
 
             if match:
                 # Guardamos tupla para mostrar
-                results.append(f"• {self._escape(name)} (Stock: {stock})")
+                results.append(f"• {self._escape(name)} \(Stock: {self._escape(stock)}\)")
 
         if not results:
-            return f"🔍 No encontré productos con el criterio: *{criterio}*\."
+            return f"🔍 No encontré productos con el criterio: *{self._escape(criterio)}*\."
             
         # Limitamos a 15 para no saturar Telegram
         limit = 15
         display = results[:limit]
-        msg = f"📋 *Reporte: {criterio.upper()}*\n" + "\n".join(display)
+        msg = f"📋 *Reporte: {self._escape(criterio.upper())}*\n" + "\n".join(display)
         
         if len(results) > limit:
-            msg += f"\n\n_...y {len(results) - limit} más\._"
+            msg += f"\n\n_\.\.\.y {len(results) - limit} más\._"
             
         return msg
