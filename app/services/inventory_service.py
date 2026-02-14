@@ -156,7 +156,13 @@ class InventoryService:
             # 1. BÚSQUEDA POR SKU (Exacta - Prioridad Máxima)
             for i, sku in enumerate(skus):
                 if i == 0: continue # Saltar encabezado
-                if self._normalize(sku) == query_norm:
+                
+                # FIX: Convertir a string y quitar decimales .0 si Google Sheets lo devolvió como número
+                sku_str = str(sku)
+                if sku_str.endswith(".0"):
+                    sku_str = sku_str[:-2]
+
+                if self._normalize(sku_str) == query_norm:
                     # Encontramos por SKU, devolvemos el nombre asociado (si existe)
                     real_name = product_names[i] if i < len(product_names) else "Producto sin nombre"
                     return i + 1, real_name
@@ -250,6 +256,10 @@ class InventoryService:
         # Índices de lista (Python empieza en 0): 
         # 1=SKU, 3=Categoria, 4=Stock, 5=Unidad, 7=Precio, 8=Vencimiento (Columna I)
         sku = values[1] if len(values) > 1 else "??"
+        # Limpieza visual del SKU (para que no se vea 1001.0)
+        if str(sku).endswith(".0"):
+            sku = str(sku)[:-2]
+            
         category = values[3] if len(values) > 3 else "-"
         stock = values[4] if len(values) > 4 else "0"
         unit = values[5] if len(values) > 5 else "UND"
