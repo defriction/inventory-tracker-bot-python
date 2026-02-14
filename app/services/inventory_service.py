@@ -152,6 +152,15 @@ class InventoryService:
             skus = self.inventory_sheet.col_values(2) # Columna B
             product_names = self.inventory_sheet.col_values(3) # Columna C
             query_norm = self._normalize(query)
+            
+            # FIX: Limpieza profunda de la búsqueda (Query)
+            # 1. Si la IA incluyó la palabra "sku" al principio, la quitamos.
+            query_sku = query_norm
+            if query_sku.startswith("sku "):
+                query_sku = query_sku[4:].strip()
+            # 2. Si la IA devolvió un número con decimales .0, lo limpiamos.
+            if query_sku.endswith(".0"):
+                query_sku = query_sku[:-2]
 
             # 1. BÚSQUEDA POR SKU (Exacta - Prioridad Máxima)
             for i, sku in enumerate(skus):
@@ -162,7 +171,8 @@ class InventoryService:
                 if sku_str.endswith(".0"):
                     sku_str = sku_str[:-2]
 
-                if self._normalize(sku_str) == query_norm:
+                # Comparamos el SKU limpio del Excel contra la Query limpia
+                if self._normalize(sku_str) == query_sku:
                     # Encontramos por SKU, devolvemos el nombre asociado (si existe)
                     real_name = product_names[i] if i < len(product_names) else "Producto sin nombre"
                     return i + 1, real_name
