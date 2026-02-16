@@ -42,6 +42,13 @@ class InventoryService:
         if product_name is not None:
             product_name = str(product_name)
             
+        # 🧠 LOGICA DE RESPALDO: Si no hay nombre, buscamos por Lote o Invima
+        if not product_name:
+            if intent.get('lote'):
+                product_name = intent.get('lote')
+            elif intent.get('invima'):
+                product_name = intent.get('invima')
+
         # Valores crudos (pueden ser None)
         qty_val = intent.get('cantidad')
         qty = int(qty_val) if qty_val is not None else 1 # Default 1 solo para operaciones
@@ -151,47 +158,54 @@ class InventoryService:
         3. Nombre Parcial (si exact_match=False).
         """
         try:
-            skus = self.inventory_sheet.col_values(2) # Columna B
-            product_names = self.inventory_sheet.col_values(3) # Columna C
+            # Optimización: Leer todo de una vez para buscar en múltiples columnas (SKU, Nombre, Invima, Lote)
+            rows = self.inventory_sheet.get_all_values()
+            if not rows: return None, None
+            
             query_norm = self._normalize(query)
             
             # FIX: Limpieza profunda de la búsqueda (Query)
-            # 1. Si la IA incluyó la palabra "sku" al principio, la quitamos.
-            query_sku = query_norm
-            if query_sku.startswith("sku "):
-                query_sku = query_sku[4:].strip()
-            # 2. Si la IA devolvió un número con decimales .0, lo limpiamos.
-            if query_sku.endswith(".0"):
-                query_sku = query_sku[:-2]
+            # Quitamos prefijos comunes que la IA o el usuario podrían incluir
+            query_clean = query_norm
+            for prefix in ["sku ", "lote ", "invima ", "inv "]:
+                if query_clean.startswith(prefix):
+                    query_clean = query_clean[len(prefix):].strip()
+            
+            if query_clean.endswith(".0"):
+                query_clean = query_clean[:-2]
 
-            # 1. BÚSQUEDA POR SKU (Exacta - Prioridad Máxima)
-            for i, sku in enumerate(skus):
+            # 1. BÚSQUEDA POR IDENTIFICADORES (SKU, INVIMA, LOTE) - Prioridad Máxima
+            for i, row in enumerate(rows):
                 if i == 0: continue # Saltar encabezado
                 
-                # FIX: Convertir a string y quitar decimales .0 si Google Sheets lo devolvió como número
-                sku_str = str(sku)
-                if sku_str.endswith(".0"):
-                    sku_str = sku_str[:-2]
+                # Indices: 1=SKU, 2=Nombre, 10=Invima, 11=Lote
+                sku = str(row[1]) if len(row) > 1 else ""
+                name = str(row[2]) if len(row) > 2 else "Producto sin nombre"
+                invima = str(row[10]) if len(row) > 10 else ""
+                lote = str(row[11]) if len(row) > 11 else ""
+                
+                # Limpieza de SKU del excel
+                if sku.endswith(".0"): sku = sku[:-2]
 
-                # Comparamos el SKU limpio del Excel contra la Query limpia
-                if self._normalize(sku_str) == query_sku:
-                    # Encontramos por SKU, devolvemos el nombre asociado (si existe)
-                    real_name = product_names[i] if i < len(product_names) else "Producto sin nombre"
-                    return i + 1, real_name
+                # Comparamos contra SKU, INVIMA o LOTE
+                if (self._normalize(sku) == query_clean or 
+                    self._normalize(invima) == query_clean or 
+                    self._normalize(lote) == query_clean):
+                    return i + 1, name
 
             # 2. BÚSQUEDA POR NOMBRE (Exacta)
-            for i, name in enumerate(product_names):
-                if i == 0: continue # Saltar encabezado
-                cell_norm = self._normalize(name)
-                if query_norm == cell_norm:
+            for i, row in enumerate(rows):
+                if i == 0: continue
+                name = str(row[2]) if len(row) > 2 else ""
+                if self._normalize(name) == query_norm:
                     return i + 1, name
             
             # 3. BÚSQUEDA POR NOMBRE (Parcial / Inferencia)
             if not exact_match:
-                for i, name in enumerate(product_names):
+                for i, row in enumerate(rows):
                     if i == 0: continue
-                    cell_norm = self._normalize(name)
-                    if query_norm in cell_norm:
+                    name = str(row[2]) if len(row) > 2 else ""
+                    if query_norm in self._normalize(name):
                         return i + 1, name 
 
             return None, None
