@@ -219,16 +219,22 @@ class InventoryService:
 
         # Formatear mensaje de respuesta
         exp_msg = f" \| 📅 Vence: {self._escape(expiration_date)}" if expiration_date else ""
-        loc_msg = f"\n📍 Ubicación: {self._escape(location)}" if location else ""
-        invima_msg = f"\n📝 INVIMA: {self._escape(invima)}" if invima else ""
-        lote_msg = f" \| 📦 Lote: {self._escape(lote)}" if lote else ""
+        
+        # Construir bloque de detalles opcionales verticalmente
+        details = []
+        if location: details.append(f"📍 Ubicación: {self._escape(location)}")
+        if invima: details.append(f"📝 INVIMA: {self._escape(invima)}")
+        if lote: details.append(f"📦 Lote: {self._escape(lote)}")
+        
+        details_msg = "\n".join(details)
+        if details_msg: details_msg = "\n" + details_msg
 
         return (f"🆕 *Producto Creado*\n"
                 f"📦 {self._escape(name)}\n"
                 f"📂 Cat: {self._escape(category)} \| 📏 Unidad: {self._escape(unit)}\n"
                 f"💰 Costo: ${self._escape(cost_val)}\n"
-                f"💲 Precio: ${self._escape(price_val)}{exp_msg}\n"
-                f"{loc_msg}{invima_msg}{lote_msg}"
+                f"💲 Precio: ${self._escape(price_val)}{exp_msg}"
+                f"{details_msg}\n"
                 f"🔢 Stock inicial: {self._escape(initial_stock)}")
 
     def _handle_sale(self, row_idx, name, qty, user):
