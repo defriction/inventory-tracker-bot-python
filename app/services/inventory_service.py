@@ -53,6 +53,8 @@ class InventoryService:
         unit = intent.get('unidad') or 'UND'
         expiration_date = intent.get('fecha_vencimiento') or ""
         location = intent.get('ubicacion') or ""
+        invima = intent.get('invima') or ""
+        lote = intent.get('lote') or ""
 
         if action == "DESCONOCIDO":
             logger.warning("⚠️ Acción desconocida recibida")
@@ -89,7 +91,7 @@ class InventoryService:
                     response_text = f"⚠️ Ya encontré un producto similar: *{self._escape(real_name)}*\. Usa otro nombre si es diferente\."
                 else:
                     # AHORA PASAMOS LA FECHA DE VENCIMIENTO A LA FUNCIÓN
-                    response_text = self._create_product(product_name, price, qty, user_name, category, unit, expiration_date, location, purchase_price)
+                    response_text = self._create_product(product_name, price, qty, user_name, category, unit, expiration_date, location, purchase_price, invima, lote)
             
             # Para el resto de acciones el producto DEBE existir
             elif not row_idx:
@@ -197,7 +199,7 @@ class InventoryService:
             logger.error(f"Error buscando producto: {e}")
             return None, None
 
-    def _create_product(self, name, price, initial_stock, user, category="General", unit="UND", expiration_date="", location="", purchase_price=0):
+    def _create_product(self, name, price, initial_stock, user, category="General", unit="UND", expiration_date="", location="", purchase_price=0, invima="", lote=""):
         """Crea producto nuevo incluyendo Fecha de Vencimiento"""
         logger.info(f"🆕 Creando producto: {name} | Precio: {price} | Stock: {initial_stock}")
         
@@ -207,8 +209,8 @@ class InventoryService:
         cost_val = purchase_price if purchase_price else 0
         
         # Estructura Columnas: 
-        # A: UUID, B: SKU, C: Nombre, D: Categoria, E: Stock, F: Unidad, G: Costo, H: Precio, I: Vencimiento, J: Ubicacion
-        row_data = [new_uuid, sku, name, category, initial_stock, unit, cost_val, price_val, expiration_date, location]
+        # A: UUID, B: SKU, C: Nombre, D: Categoria, E: Stock, F: Unidad, G: Costo, H: Precio, I: Vencimiento, J: Ubicacion, K: Invima
+        row_data = [new_uuid, sku, name, category, initial_stock, unit, cost_val, price_val, expiration_date, location, invima]
         
         self.inventory_sheet.append_row(row_data)
         
@@ -218,13 +220,14 @@ class InventoryService:
         # Formatear mensaje de respuesta
         exp_msg = f" \| 📅 Vence: {self._escape(expiration_date)}" if expiration_date else ""
         loc_msg = f"\n📍 Ubicación: {self._escape(location)}" if location else ""
+        invima_msg = f"\n📝 INVIMA: {self._escape(invima)}" if invima else ""
 
         return (f"🆕 *Producto Creado*\n"
                 f"📦 {self._escape(name)}\n"
                 f"📂 Cat: {self._escape(category)} \| 📏 Unidad: {self._escape(unit)}\n"
                 f"💰 Costo: ${self._escape(cost_val)}\n"
                 f"💲 Precio: ${self._escape(price_val)}{exp_msg}\n"
-                f"{loc_msg}"
+                f"{loc_msg}{invima_msg}"
                 f"🔢 Stock inicial: {self._escape(initial_stock)}")
 
     def _handle_sale(self, row_idx, name, qty, user):
@@ -279,10 +282,14 @@ class InventoryService:
         # Leemos la fecha de vencimiento
         expiration = values[8] if len(values) > 8 else ""
         location = values[9] if len(values) > 9 else ""
+        invima = values[10] if len(values) > 10 else ""
+        lote = values[11] if len(values) > 11 else ""
         logger.info(f"📊 Datos parseados - SKU: {sku}, Stock: {stock}, Precio: {price}, Vence: {expiration}, Ubic: {location}")
 
         exp_msg = f"\n📅 Vence: {self._escape(expiration)}" if expiration else ""
         loc_msg = f"\n📍 Ubicación: {self._escape(location)}" if location else ""
+        invima_msg = f"\n📝 INVIMA: {self._escape(invima)}" if invima else ""
+        lote_msg = f"\n📦 Lote: {self._escape(lote)}" if lote else ""
 
         return (f"📦 *Consulta de Inventario*\n"
                 f"📝 Producto: {self._escape(name)}\n"
@@ -290,7 +297,7 @@ class InventoryService:
                 f"🔢 Stock: {self._escape(stock)} {self._escape(unit)}\n"
                 f"💰 Costo: ${self._escape(cost)}\n"
                 f"💲 Precio: ${self._escape(price)}"
-                f"{exp_msg}{loc_msg}")
+                f"{exp_msg}{loc_msg}{invima_msg}{lote_msg}")
 
     def _update_product(self, row_idx, current_name, intent, user):
         """Actualiza campos específicos del producto"""
@@ -335,6 +342,18 @@ class InventoryService:
         if new_loc:
             self.inventory_sheet.update_cell(row_idx, 10, new_loc)
             updates.append(f"Ubicación: {self._escape(new_loc)}")
+
+        # 8. Invima (Columna K -> 11)
+        new_invima = intent.get('invima')
+        if new_invima:
+            self.inventory_sheet.update_cell(row_idx, 11, new_invima)
+            updates.append(f"INVIMA: {self._escape(new_invima)}")
+
+        # 9. Lote (Columna L -> 12)
+        new_lote = intent.get('lote')
+        if new_lote:
+            self.inventory_sheet.update_cell(row_idx, 12, new_lote)
+            updates.append(f"Lote: {self._escape(new_lote)}")
 
         # 5. Nuevo Nombre (Columna C -> 3)
         new_name = intent.get('nuevo_nombre')
@@ -386,6 +405,8 @@ class InventoryService:
             stock = int(row[4]) if row[4].isdigit() else 0
             exp_str = row[8]
             loc = row[9]
+            invima = row[10] if len(row) > 10 else ""
+            lote = row[11] if len(row) > 11 else ""
             
             match = False
             
@@ -415,7 +436,9 @@ class InventoryService:
 
             if match:
                 # Guardamos tupla para mostrar
-                results.append(f"• {self._escape(name)} \(Stock: {self._escape(stock)}\)")
+                invima_str = f" \| Inv: {self._escape(invima)}" if invima else ""
+                lote_str = f" \| Lote: {self._escape(lote)}" if lote else ""
+                results.append(f"• {self._escape(name)} \(Stock: {self._escape(stock)}\){invima_str}{lote_str}")
 
         if not results:
             return f"🔍 No encontré productos con el criterio: *{self._escape(criterio)}*\."

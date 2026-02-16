@@ -42,6 +42,8 @@ def interpret_intent(user_text: str) -> dict:
     - "precio_compra": Costo de adquisición o compra al proveedor (si se menciona).
     - "cantidad": Stock inicial o cantidad a operar (default 1).
     - "ubicacion": Lugar físico de almacenamiento (ej: "Estante 1", "Cajón B", "Bodega").
+    - "invima": Código de registro sanitario o INVIMA (ej: "2021M-0012345", "NSOC...").
+    - "lote": Código de lote de producción (ej: "L-452", "BATCH-01", "Lote 2024").
     
     REGLAS DE INFERENCIA (SOLO PARA ACCIÓN 'CREAR'):
     - "categoria": Clasifica el producto lógicamente.
@@ -55,6 +57,7 @@ def interpret_intent(user_text: str) -> dict:
        
     EJEMPLOS (Few-Shot Learning):
     - "Crea Martillo de Bola a 25000" -> {"accion": "CREAR", "producto": "Martillo de Bola", "precio": 25000, "cantidad": 0, "categoria": "Herramientas", "unidad": "UND"}
+    - "Crea Dolex Forte invima 2023M-12345 a 15000" -> {"accion": "CREAR", "producto": "Dolex Forte", "precio": 15000, "invima": "2023M-12345", "categoria": "Salud"}
     - "Crea 50 metros de cable numero 12 a 1500" -> {"accion": "CREAR", "producto": "Cable No. 12", "precio": 1500, "cantidad": 50, "categoria": "Eléctricos", "unidad": "MTS"}
     - "Crea Pintura costo 10000 venta 20000" -> {"accion": "CREAR", "producto": "Pintura", "precio": 20000, "precio_compra": 10000, "categoria": "Pinturas"}
     - "Crea Pintura Roja en Estante 4 a 20000" -> {"accion": "CREAR", "producto": "Pintura Roja", "precio": 20000, "ubicacion": "Estante 4", "categoria": "Pinturas"}
@@ -70,6 +73,8 @@ def interpret_intent(user_text: str) -> dict:
     - "precio_compra": Si se menciona un nuevo costo.
     - "cantidad": Si se menciona un ajuste de stock (ej: "Hay 50", "Poner stock en 50").
     - "ubicacion": Si menciona cambio de lugar.
+    - "invima": Si menciona actualizar el registro sanitario.
+    - "lote": Si menciona actualizar el lote.
     - Ejemplo: "Actualiza precio de Martillo a 30000" -> {"accion": "ACTUALIZAR", "producto": "Martillo", "precio": 30000}
 
     REGLAS PARA "LISTAR":
@@ -118,7 +123,9 @@ def interpret_intent(user_text: str) -> dict:
             "unidad": data.get("unidad"),      
             "fecha_vencimiento": data.get("fecha_vencimiento"),
             "ubicacion": data.get("ubicacion"),
-            "criterio": data.get("criterio")
+            "criterio": data.get("criterio"),
+            "invima": data.get("invima"),
+            "lote": data.get("lote")
         }
 
     except Exception as e:
