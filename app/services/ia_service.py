@@ -58,6 +58,7 @@ def interpret_intent(user_text: str) -> dict:
     EJEMPLOS (Few-Shot Learning):
     - "Crea Martillo de Bola a 25000" -> {"accion": "CREAR", "producto": "Martillo de Bola", "precio": 25000, "cantidad": 0, "categoria": "Herramientas", "unidad": "UND"}
     - "Crea Dolex Forte invima 2023M-12345 a 15000" -> {"accion": "CREAR", "producto": "Dolex Forte", "precio": 15000, "invima": "2023M-12345", "categoria": "Salud"}
+    - "Crea Vacuna XYZ lote B-2024 invima 2023M-123 a 50000" -> {"accion": "CREAR", "producto": "Vacuna XYZ", "precio": 50000, "lote": "B-2024", "invima": "2023M-123", "categoria": "Salud"}
     - "Crea 50 metros de cable numero 12 a 1500" -> {"accion": "CREAR", "producto": "Cable No. 12", "precio": 1500, "cantidad": 50, "categoria": "Eléctricos", "unidad": "MTS"}
     - "Crea Pintura costo 10000 venta 20000" -> {"accion": "CREAR", "producto": "Pintura", "precio": 20000, "precio_compra": 10000, "categoria": "Pinturas"}
     - "Crea Pintura Roja en Estante 4 a 20000" -> {"accion": "CREAR", "producto": "Pintura Roja", "precio": 20000, "ubicacion": "Estante 4", "categoria": "Pinturas"}

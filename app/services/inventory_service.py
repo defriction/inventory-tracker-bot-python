@@ -209,8 +209,8 @@ class InventoryService:
         cost_val = purchase_price if purchase_price else 0
         
         # Estructura Columnas: 
-        # A: UUID, B: SKU, C: Nombre, D: Categoria, E: Stock, F: Unidad, G: Costo, H: Precio, I: Vencimiento, J: Ubicacion, K: Invima
-        row_data = [new_uuid, sku, name, category, initial_stock, unit, cost_val, price_val, expiration_date, location, invima]
+        # A: UUID, B: SKU, C: Nombre, D: Categoria, E: Stock, F: Unidad, G: Costo, H: Precio, I: Vencimiento, J: Ubicacion, K: Invima, L: Lote
+        row_data = [new_uuid, sku, name, category, initial_stock, unit, cost_val, price_val, expiration_date, location, invima, lote]
         
         self.inventory_sheet.append_row(row_data)
         
@@ -221,13 +221,14 @@ class InventoryService:
         exp_msg = f" \| 📅 Vence: {self._escape(expiration_date)}" if expiration_date else ""
         loc_msg = f"\n📍 Ubicación: {self._escape(location)}" if location else ""
         invima_msg = f"\n📝 INVIMA: {self._escape(invima)}" if invima else ""
+        lote_msg = f" \| 📦 Lote: {self._escape(lote)}" if lote else ""
 
         return (f"🆕 *Producto Creado*\n"
                 f"📦 {self._escape(name)}\n"
                 f"📂 Cat: {self._escape(category)} \| 📏 Unidad: {self._escape(unit)}\n"
                 f"💰 Costo: ${self._escape(cost_val)}\n"
                 f"💲 Precio: ${self._escape(price_val)}{exp_msg}\n"
-                f"{loc_msg}{invima_msg}"
+                f"{loc_msg}{invima_msg}{lote_msg}"
                 f"🔢 Stock inicial: {self._escape(initial_stock)}")
 
     def _handle_sale(self, row_idx, name, qty, user):
@@ -284,7 +285,7 @@ class InventoryService:
         location = values[9] if len(values) > 9 else ""
         invima = values[10] if len(values) > 10 else ""
         lote = values[11] if len(values) > 11 else ""
-        logger.info(f"📊 Datos parseados - SKU: {sku}, Stock: {stock}, Precio: {price}, Vence: {expiration}, Ubic: {location}")
+        logger.info(f"📊 Datos parseados - SKU: {sku}, Stock: {stock}, Precio: {price}, Vence: {expiration}, Ubic: {location}, Invima: {invima}, Lote: {lote}")
 
         exp_msg = f"\n📅 Vence: {self._escape(expiration)}" if expiration else ""
         loc_msg = f"\n📍 Ubicación: {self._escape(location)}" if location else ""
