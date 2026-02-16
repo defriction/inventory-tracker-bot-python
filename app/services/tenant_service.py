@@ -77,15 +77,20 @@ class TenantService:
     def get_tenant_by_user(self, telegram_id: str):
         """Busca en la DB Admin si el usuario ya tiene hoja asignada"""
         try:
-            # Buscamos en la Columna A (Telegram ID)
-            cell = self.admin_sheet.find(str(telegram_id))
-            if cell:
-                row = self.admin_sheet.row_values(cell.row)
-                return {
-                    "pyme_name": row[2], 
-                    "sheet_id": row[3],
-                    "token": row[4]
-                }
+            # Buscamos en la Columna A (Telegram ID) soportando múltiples usuarios (CSV)
+            # Obtenemos toda la columna A para buscar manualmente
+            owners_col = self.admin_sheet.col_values(1)
+            
+            for i, val in enumerate(owners_col):
+                # val puede ser "123" o "123,456"
+                if str(telegram_id) in val.split(','):
+                    row = self.admin_sheet.row_values(i + 1) # i+1 porque gspread es 1-based
+                    if len(row) > 4: # Aseguramos que la fila tenga datos
+                        return {
+                            "pyme_name": row[2], 
+                            "sheet_id": row[3],
+                            "token": row[4]
+                        }
             return None
         except Exception:
             return None # No encontrado
@@ -99,13 +104,16 @@ class TenantService:
             if not cell:
                 return False, "❌ Token inválido o no encontrado\."
             
-            # Verificar si ya tiene dueño (Columna A)
-            current_owner = self.admin_sheet.cell(cell.row, 1).value
-            if current_owner and current_owner.strip() != "":
-                return False, "⛔ Este código ya fue usado\."
+            # Verificar dueños actuales (Columna A)
+            current_val = self.admin_sheet.cell(cell.row, 1).value or ""
+            owners = [o.strip() for o in current_val.split(',') if o.strip()]
+            
+            # Si ya está vinculado, no hacemos nada (idempotencia)
+            if str(telegram_id) not in owners:
+                owners.append(str(telegram_id))
+                # Actualizamos la celda con la nueva lista separada por comas
+                self.admin_sheet.update_cell(cell.row, 1, ",".join(owners))
 
-            # Registrar al usuario
-            self.admin_sheet.update_cell(cell.row, 1, str(telegram_id))
             pyme_name = self.admin_sheet.cell(cell.row, 3).value
 
             # Escapar nombre para MarkdownV2
