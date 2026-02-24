@@ -465,7 +465,7 @@ class InventoryService:
             return f"🔍 No encontré productos con el criterio: *{self._escape(criterio)}*\."
             
         # Limitamos a 15 para no saturar Telegram
-        limit = 15
+        limit = 30
         display = results[:limit]
         msg = f"📋 *Reporte: {self._escape(criterio.upper())}*\n" + "\n".join(display)
         
