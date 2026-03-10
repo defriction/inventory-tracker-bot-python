@@ -42,9 +42,12 @@ class InventoryService:
         if product_name is not None:
             product_name = str(product_name)
             
-        # 🧠 LOGICA DE RESPALDO: Si no hay nombre, buscamos por Lote o Invima
+        # 🧠 LOGICA DE RESPALDO: Si no hay nombre de producto, buscamos por SKU, Lote o Invima.
         if not product_name:
-            if intent.get('lote'):
+            # La IA puede extraer el SKU en 'nuevo_sku'. Le damos prioridad a este identificador.
+            if intent.get('nuevo_sku'):
+                product_name = intent.get('nuevo_sku')
+            elif intent.get('lote'):
                 product_name = intent.get('lote')
             elif intent.get('invima'):
                 product_name = intent.get('invima')
@@ -264,9 +267,13 @@ class InventoryService:
         self.inventory_sheet.update_cell(row_idx, 5, new_stock)
         
         sku = self.inventory_sheet.cell(row_idx, 2).value
+        # Limpieza visual del SKU (para evitar .0 en números)
+        if str(sku).endswith(".0"):
+            sku = str(sku)[:-2]
+            
         self._log_movement("VENTA", sku, name, -qty, user)
 
-        return f"✅ *Venta Registrada*\n🔻 {self._escape(name)}\nStock: {self._escape(current_stock)} ➡ {self._escape(new_stock)}"
+        return f"✅ *Venta Registrada*\n🔻 {self._escape(name)} \(SKU: {self._escape(sku)}\)\nStock: {self._escape(current_stock)} ➡ {self._escape(new_stock)}"
 
     def _handle_purchase(self, row_idx, name, qty, user):
         """Procesa compra"""
@@ -277,9 +284,13 @@ class InventoryService:
         self.inventory_sheet.update_cell(row_idx, 5, new_stock)
         
         sku = self.inventory_sheet.cell(row_idx, 2).value
+        # Limpieza visual del SKU
+        if str(sku).endswith(".0"):
+            sku = str(sku)[:-2]
+            
         self._log_movement("COMPRA", sku, name, qty, user)
 
-        return f"✅ *Entrada Registrada*\n🟢 {self._escape(name)}\nStock: {self._escape(current_stock)} ➡ {self._escape(new_stock)}"
+        return f"✅ *Entrada Registrada*\n🟢 {self._escape(name)} \(SKU: {self._escape(sku)}\)\nStock: {self._escape(current_stock)} ➡ {self._escape(new_stock)}"
 
     def _handle_query(self, row_idx, name):
         """Consulta datos, incluyendo vencimiento"""
