@@ -471,12 +471,15 @@ class InventoryService:
                 invima_str = f" \| Inv: {self._escape(invima)}" if invima else ""
                 lote_str = f" \| Lote: {self._escape(lote)}" if lote else ""
                 results.append(f"• {self._escape(name)} \(Stock: {self._escape(stock)}\){invima_str}{lote_str}")
+        
+        # Ordenar alfabéticamente por el nombre del producto (el primer elemento después del "• ")
+        results.sort(key=lambda x: x.split(' ')[1].lower())
 
         if not results:
             return f"🔍 No encontré productos con el criterio: *{self._escape(criterio)}*\."
             
-        # Limitamos a 15 para no saturar Telegram
-        limit = 100
+        # Limitamos a 200 para no saturar Telegram
+        limit = 200
         display = results[:limit]
         msg = f"📋 *Reporte: {self._escape(criterio.upper())}*\n" + "\n".join(display)
         
