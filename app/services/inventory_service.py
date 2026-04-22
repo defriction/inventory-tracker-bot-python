@@ -65,6 +65,7 @@ class InventoryService:
         location = intent.get('ubicacion') or ""
         invima = intent.get('invima') or ""
         lote = intent.get('lote') or ""
+        requested_sku = intent.get('nuevo_sku') or intent.get('sku') or ""
 
         if action == "DESCONOCIDO":
             logger.warning("⚠️ Acción desconocida recibida")
@@ -101,7 +102,7 @@ class InventoryService:
                     response_text = f"⚠️ Ya encontré un producto similar: *{self._escape(real_name)}*\. Usa otro nombre si es diferente\."
                 else:
                     # AHORA PASAMOS LA FECHA DE VENCIMIENTO A LA FUNCIÓN
-                    response_text = self._create_product(product_name, price, qty, user_name, category, unit, expiration_date, location, purchase_price, invima, lote)
+                    response_text = self._create_product(product_name, price, qty, user_name, category, unit, expiration_date, location, purchase_price, invima, lote, requested_sku)
             
             # Para el resto de acciones el producto DEBE existir
             elif not row_idx:
@@ -216,12 +217,12 @@ class InventoryService:
             logger.error(f"Error buscando producto: {e}")
             return None, None
 
-    def _create_product(self, name, price, initial_stock, user, category="General", unit="UND", expiration_date="", location="", purchase_price=0, invima="", lote=""):
+    def _create_product(self, name, price, initial_stock, user, category="General", unit="UND", expiration_date="", location="", purchase_price=0, invima="", lote="", requested_sku=""):
         """Crea producto nuevo incluyendo Fecha de Vencimiento"""
         logger.info(f"🆕 Creando producto: {name} | Precio: {price} | Stock: {initial_stock}")
         
         new_uuid = str(uuid.uuid4())[:8]
-        sku = f"GEN-{new_uuid[:4].upper()}"
+        sku = str(requested_sku).strip().upper() if requested_sku else f"GEN-{new_uuid[:4].upper()}"
         price_val = price if price else 0
         cost_val = purchase_price if purchase_price else 0
         
@@ -425,7 +426,7 @@ class InventoryService:
         if not rows or len(rows) < 2:
             return "📭 Tu inventario está vacío\."
             
-        # Indices (0-based): 2=Nombre, 4=Stock, 8=Vencimiento, 9=Ubicacion
+        # Indices (0-based): 1=SKU, 2=Nombre, 4=Stock, 8=Vencimiento, 9=Ubicacion
         results = []
         today = datetime.date.today()
         
@@ -433,6 +434,9 @@ class InventoryService:
             # Asegurar que la fila tenga suficientes columnas
             if len(row) < 10: continue
             
+            sku = row[1] if len(row) > 1 else ""
+            if str(sku).endswith(".0"):
+                sku = str(sku)[:-2]
             name = row[2]
             stock = int(row[4]) if row[4].isdigit() else 0
             exp_str = row[8]
@@ -468,9 +472,10 @@ class InventoryService:
 
             if match:
                 # Guardamos tupla para mostrar
+                sku_str = f" \(SKU: {self._escape(sku)}\)" if criterio == "ubicacion" and sku else ""
                 invima_str = f" \| Inv: {self._escape(invima)}" if invima else ""
                 lote_str = f" \| Lote: {self._escape(lote)}" if lote else ""
-                results.append(f"• {self._escape(name)} \(Stock: {self._escape(stock)}\){invima_str}{lote_str}")
+                results.append(f"• {self._escape(name)}{sku_str} \(Stock: {self._escape(stock)}\){invima_str}{lote_str}")
         
         # Ordenar alfabéticamente por el nombre del producto (el primer elemento después del "• ")
         results.sort(key=lambda x: x.split(' ')[1].lower())
