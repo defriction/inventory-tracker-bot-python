@@ -117,7 +117,7 @@ def interpret_intent(user_text: str) -> dict:
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_text}
             ],
-            model="llama-3.1-8b-instant", 
+            model="llama-3.3-70b-versatile", 
             temperature=0, 
             response_format={"type": "json_object"} 
         )

@@ -426,7 +426,7 @@ class InventoryService:
         if not rows or len(rows) < 2:
             return "ðŸ“­ Tu inventario estÃ¡ vacÃ­o\."
             
-        # Indices (0-based): 1=SKU, 4=Stock, 8=Vencimiento, 9=Ubicacion
+        # Indices (0-based): 1=SKU, 2=Nombre, 4=Stock, 8=Vencimiento, 9=Ubicacion
         results = []
         today = datetime.date.today()
         
@@ -437,6 +437,7 @@ class InventoryService:
             sku = row[1] if len(row) > 1 else ""
             if str(sku).endswith(".0"):
                 sku = str(sku)[:-2]
+            name = row[2] if len(row) > 2 else "Producto sin nombre"
             stock = int(row[4]) if row[4].isdigit() else 0
             exp_str = row[8]
             loc = row[9]
@@ -467,9 +468,10 @@ class InventoryService:
             elif criterio == "todos":
                 match = True
             if match:
-                # Mostrar solo SKU y Stock
+                # Mostrar siempre los 3 campos: nombre, SKU y stock
                 sku_display = self._escape(sku) if sku else "SIN-SKU"
-                results.append(f"• SKU: {sku_display} \| Stock: {self._escape(stock)}")
+                name_display = self._escape(name)
+                results.append(f"• {name_display} \\| SKU: {sku_display} \\| Stock: {self._escape(stock)}")
 
         # Ordenar alfabeticamente por SKU
         results.sort(key=lambda x: x.lower())
