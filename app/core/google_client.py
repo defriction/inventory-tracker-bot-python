@@ -41,14 +41,14 @@ def get_gs_client():
             if not os.path.exists("client_secret.json"):
                 raise FileNotFoundError("❌ Faltan las credenciales: Descarga el 'client_secret.json' de Google Cloud (OAuth Client Desktop).")
                 
-            logger.warning("⚠️ Token inválido o inexistente. Intentando flujo OAuth...")
+            logger.warning("⚠ Token inválido o inexistente. Intentando flujo OAuth...")
             flow = InstalledAppFlow.from_client_secrets_file(
                 "client_secret.json", SCOPES
             )
             
             # EN DOCKER ESTO FALLARÁ SI INTENTA ABRIR NAVEGADOR
             # Solo permitimos esto si estamos en local, de lo contrario avisamos
-            logger.info("🖥️ Intentando abrir navegador local para login (Si estás en Docker, esto fallará si no tienes token.json válido)...")
+            logger.info("🖥 Intentando abrir navegador local para login (Si estás en Docker, esto fallará si no tienes token.json válido)...")
             creds = flow.run_local_server(port=0)
             
         # 3. Guardar el token para la próxima vez

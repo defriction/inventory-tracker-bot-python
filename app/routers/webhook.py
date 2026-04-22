@@ -1,4 +1,4 @@
-﻿import httpx
+import httpx
 import logging
 import sys
 from fastapi import APIRouter, Request, BackgroundTasks
