@@ -25,7 +25,7 @@ def interpret_intent(user_text: str) -> dict:
     today = datetime.date.today().strftime("%Y-%m-%d")
     
     system_prompt = """
-    Eres un asistente de inventario experto. Tu misiÃ³n es estructurar datos en JSON.
+    Eres un asistente de inventario experto. Tu mision es estructurar datos en JSON.
 
     ACCIONES POSIBLES:
     1. VENTA: Salida de mercancÃ­a.
