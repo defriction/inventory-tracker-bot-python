@@ -65,6 +65,15 @@ def split_telegram_text(text: str, limit: int = TELEGRAM_SAFE_TEXT_LIMIT) -> lis
     return chunks or [raw[:limit]]
 
 
+def markdown_v2_to_plain_text(text: str) -> str:
+    """Remueve escapes de MarkdownV2 para reenvio en texto plano."""
+    plain = str(text or "")
+    reserved = ['_', '*', '[', ']', '(', ')', '~', '`', '>', '#', '+', '-', '=', '|', '{', '}', '.', '!']
+    for ch in reserved:
+        plain = plain.replace(f"\\{ch}", ch)
+    return plain
+
+
 async def send_telegram_message(chat_id: str, text: str):
     url = f"https://api.telegram.org/bot{settings.TELEGRAM_BOT_TOKEN}/sendMessage"
     chunks = split_telegram_text(text)
@@ -86,8 +95,8 @@ async def send_telegram_message(chat_id: str, text: str):
                 logger.critical("Verifica tu archivo .env o tus secretos de GitHub.")
             else:
                 logger.error(f"Telegram rechazo el mensaje: {e.response.text}")
-                # Fallback: reenviar sin parse_mode por si fue error de Markdown
-                fallback_text = f"Error de formato en respuesta:\n{text}"
+                # Fallback: reenviar el mismo contenido sin parse_mode
+                fallback_text = markdown_v2_to_plain_text(text)
                 for chunk in split_telegram_text(fallback_text):
                     await client.post(url, json={"chat_id": chat_id, "text": chunk})
         except Exception as e:

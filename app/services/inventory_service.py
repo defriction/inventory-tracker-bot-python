@@ -471,7 +471,7 @@ class InventoryService:
                 # Mostrar siempre los 3 campos: nombre, SKU y stock
                 sku_display = self._escape(sku) if sku else "SIN-SKU"
                 name_display = self._escape(name)
-                results.append(f"- {name_display} \\| SKU: {sku_display} \\| Stock: {self._escape(stock)}")
+                results.append(f"• {name_display} \\| SKU: {sku_display} \\| Stock: {self._escape(stock)}")
 
         # Ordenar alfabeticamente por SKU
         results.sort(key=lambda x: x.lower())
