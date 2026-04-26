@@ -274,7 +274,11 @@ class InventoryService:
             
         self._log_movement("VENTA", sku, name, -qty, user)
 
-        return f" *Venta Registrada*\n {self._escape(name)} \(SKU: {self._escape(sku)}\)\nStock: {self._escape(current_stock)}  {self._escape(new_stock)}"
+        return (
+            f"[SALIDA] *Venta Registrada*\n"
+            f"Producto: {self._escape(name)} \(SKU: {self._escape(sku)}\)\n"
+            f"Stock: {self._escape(current_stock)} -> {self._escape(new_stock)}"
+        )
 
     def _handle_purchase(self, row_idx, name, qty, user):
         """Procesa compra"""
@@ -291,7 +295,11 @@ class InventoryService:
             
         self._log_movement("COMPRA", sku, name, qty, user)
 
-        return f" *Entrada Registrada*\n {self._escape(name)} \(SKU: {self._escape(sku)}\)\nStock: {self._escape(current_stock)}  {self._escape(new_stock)}"
+        return (
+            f"[ENTRADA] *Entrada Registrada*\n"
+            f"Producto: {self._escape(name)} \(SKU: {self._escape(sku)}\)\n"
+            f"Stock: {self._escape(current_stock)} -> {self._escape(new_stock)}"
+        )
 
     def _handle_query(self, row_idx, name):
         """Consulta datos, incluyendo vencimiento"""
@@ -405,7 +413,11 @@ class InventoryService:
         if not updates:
             return f" Entendí que quieres actualizar *{self._escape(current_name)}*, pero no me dijiste qué cambiar \(precio, stock, etc\)\."
 
-        return f" *Producto Actualizado*\n {self._escape(current_name)}\nCambios: {', '.join(updates)}"
+        return (
+            f"[ACTUALIZACION] *Producto Actualizado*\n"
+            f"Producto: {self._escape(current_name)}\n"
+            f"Cambios: {', '.join(updates)}"
+        )
 
     def _log_movement(self, mov_type, sku, name, qty, user, notes=""):
         """Auditoría"""
