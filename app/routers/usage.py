@@ -56,4 +56,5 @@ def get_admin_stats(days: int = Query(30, ge=1, le=90)):
         except: pass
 
     all_stats["daily"] = [{"date": k, "count": v} for k, v in sorted(all_stats["daily"].items())]
+    all_stats["recent"] = []  # Admin view doesn't show per-tenant recent events
     return all_stats

@@ -108,7 +108,8 @@ export default function UsageStats({ token }: { token: string }) {
           <h3 className="text-sm font-semibold text-gray-700">Eventos Recientes</h3>
         </div>
         <div className="divide-y divide-gray-50 max-h-64 overflow-y-auto">
-          {stats.recent.map((e, i) => (
+          {stats.recent && stats.recent.length > 0 ? (
+            stats.recent.map((e, i) => (
             <div key={i} className="px-6 py-2.5 flex items-center justify-between text-xs">
               <div className="flex items-center gap-3">
                 <span className="font-medium text-gray-700 capitalize">{e.event.replace('_', ' ')}</span>
@@ -116,7 +117,9 @@ export default function UsageStats({ token }: { token: string }) {
               </div>
               <span className="text-gray-400 font-mono">{e.created_at?.slice(11, 16)}</span>
             </div>
-          ))}
+          ))) : (
+            <div className="px-6 py-8 text-center text-xs text-gray-400">Sin eventos recientes</div>
+          )}
         </div>
       </div>
     </div>
