@@ -277,7 +277,7 @@ class InventoryService:
         return (
             f"🛒 *Venta Registrada*\n"
             f"📦 Producto: {self._escape(name)} \(SKU: {self._escape(sku)}\)\n"
-            f"📉 Stock: {self._escape(current_stock)} -> {self._escape(new_stock)}"
+            f"📉 Stock: {self._escape(current_stock)} → {self._escape(new_stock)}"
         )
 
     def _handle_purchase(self, row_idx, name, qty, user):
@@ -298,7 +298,7 @@ class InventoryService:
         return (
             f"📥 *Entrada Registrada*\n"
             f"📦 Producto: {self._escape(name)} \(SKU: {self._escape(sku)}\)\n"
-            f"📈 Stock: {self._escape(current_stock)} -> {self._escape(new_stock)}"
+            f"📈 Stock: {self._escape(current_stock)} → {self._escape(new_stock)}"
         )
 
     def _handle_query(self, row_idx, name):
