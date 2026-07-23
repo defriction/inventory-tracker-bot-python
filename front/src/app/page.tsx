@@ -87,20 +87,49 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-[#f7f8f8]">
-      <nav className="sticky top-0 z-50 border-b border-gray-200 bg-white/80 backdrop-blur-xl">
+      <nav className="sticky top-0 z-50 bg-white/95 backdrop-blur-xl border-b border-gray-100 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-14">
-            <div className="flex items-center gap-3 sm:gap-6">
-              <Bot className="w-6 h-6 text-indigo-600" />
-              <div className="flex gap-0.5 sm:gap-1">
-                <TabButton active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')}><LayoutDashboard className="w-4 h-4 sm:mr-1.5" /><span className="hidden sm:inline">Dashboard</span></TabButton>
-                <TabButton active={activeTab === 'inventory'} onClick={() => setActiveTab('inventory')}><Package className="w-4 h-4 sm:mr-1.5" /><span className="hidden sm:inline">Inventario</span></TabButton>
-                <TabButton active={activeTab === 'analytics'} onClick={() => setActiveTab('analytics')}><BarChart3 className="w-4 h-4 sm:mr-1.5" /><span className="hidden sm:inline">Analytics</span></TabButton>
+          <div className="flex items-center justify-between h-16">
+            {/* Left: Brand + Tabs */}
+            <div className="flex items-center gap-6">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center shadow-md shadow-indigo-500/20">
+                  <Bot className="w-5 h-5 text-white" />
+                </div>
+                <div className="hidden sm:block">
+                  <h1 className="text-sm font-bold text-gray-900 leading-tight">Inventario Inteligente</h1>
+                  <p className="text-[10px] text-gray-400 leading-tight">SaaS para PyMEs</p>
+                </div>
+              </div>
+
+              <div className="h-6 w-px bg-gray-200 hidden sm:block" />
+
+              <div className="flex bg-gray-100 rounded-xl p-0.5">
+                <TabButton active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')}>
+                  <LayoutDashboard className="w-4 h-4" />
+                  <span className="hidden sm:inline ml-1.5">Dashboard</span>
+                </TabButton>
+                <TabButton active={activeTab === 'inventory'} onClick={() => setActiveTab('inventory')}>
+                  <Package className="w-4 h-4" />
+                  <span className="hidden sm:inline ml-1.5">Inventario</span>
+                </TabButton>
+                <TabButton active={activeTab === 'analytics'} onClick={() => setActiveTab('analytics')}>
+                  <BarChart3 className="w-4 h-4" />
+                  <span className="hidden sm:inline ml-1.5">Analytics</span>
+                </TabButton>
               </div>
             </div>
-            <button onClick={() => { setIsAuthenticated(false); localStorage.removeItem('inventory_token'); localStorage.removeItem('inventory_auth'); }} className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-700 transition-colors px-3 py-1.5 rounded-md hover:bg-gray-100">
-              <LogOut className="w-3.5 h-3.5" /> Salir
-            </button>
+
+            {/* Right: Actions */}
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => { setIsAuthenticated(false); localStorage.removeItem('inventory_token'); localStorage.removeItem('inventory_auth'); }}
+                className="flex items-center gap-2 text-xs font-medium text-gray-500 hover:text-gray-700 transition-colors px-3 py-2 rounded-lg hover:bg-gray-100"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Cerrar sesion</span>
+              </button>
+            </div>
           </div>
         </div>
       </nav>
@@ -148,7 +177,11 @@ export default function Home() {
 function TabButton({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
     <button onClick={onClick}
-      className={`flex items-center px-3 py-1.5 text-sm rounded-md transition-all duration-200 ${active ? 'text-gray-900 bg-gray-200/80' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'}`}
+      className={`flex items-center px-3.5 py-2 rounded-[10px] text-sm font-medium transition-all duration-200 ${
+        active
+          ? 'bg-white text-gray-900 shadow-sm shadow-gray-200/50'
+          : 'text-gray-500 hover:text-gray-700'
+      }`}
       style={{ fontFeatureSettings: "'cv01', 'ss03'" }}>
       {children}
     </button>
