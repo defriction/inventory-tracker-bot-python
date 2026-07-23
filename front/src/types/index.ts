@@ -24,3 +24,45 @@ export interface InventoryResponse {
   products: Product[];
   total: number;
 }
+
+export interface Stats {
+  total_products: number;
+  total_stock_value: number;
+  low_stock_count: number;
+  expiring_count: number;
+}
+
+export interface AlertItem {
+  sku: string;
+  name: string;
+  stock: number;
+  unit: string;
+}
+
+export interface ExpiringItem {
+  sku: string;
+  name: string;
+  expiration_date: string;
+  days_left: number;
+}
+
+export interface AlertsResponse {
+  low_stock: AlertItem[];
+  expiring: ExpiringItem[];
+}
+
+export interface Movement {
+  timestamp: string;
+  tx_id: string;
+  mov_type: string;
+  sku: string;
+  name: string;
+  qty: number;
+  user: string;
+  notes: string;
+}
+
+export interface MovementsResponse {
+  movements: Movement[];
+  total: number;
+}

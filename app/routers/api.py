@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException, Query, Depends
 from pydantic import BaseModel
 from typing import Optional, List
+import datetime
 from app.services.tenant_service import TenantService
 from app.services.inventory_service import InventoryService
 from app.core.config import settings
@@ -231,6 +232,93 @@ async def get_movements(
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.get('/stats')
+async def get_stats(
+    token: str = Query(...),
+    inventory_service: InventoryService = Depends(get_inventory_service)
+):
+    """Estadisticas agregadas: total productos, valor inventario, alertas."""
+    try:
+        rows = inventory_service.inventory_sheet.get_all_values()
+        if not rows or len(rows) < 2:
+            return {"total_products": 0, "total_stock_value": 0, "low_stock_count": 0, "expiring_count": 0}
+
+        total_products = 0
+        total_stock_value = 0.0
+        low_stock_count = 0
+        expiring_count = 0
+        today = datetime.date.today()
+
+        for row in rows[1:]:
+            if len(row) < 8:
+                continue
+            total_products += 1
+            stock = int(row[4]) if len(row) > 4 and str(row[4]).isdigit() else 0
+            price = float(row[7]) if len(row) > 7 and str(row[7]).replace('.', '').isdigit() else 0
+            total_stock_value += stock * price
+            if 0 < stock <= 5:
+                low_stock_count += 1
+            if len(row) > 8 and row[8]:
+                try:
+                    exp_date = datetime.datetime.strptime(str(row[8]), "%Y-%m-%d").date()
+                    if (exp_date - today).days <= 30:
+                        expiring_count += 1
+                except Exception:
+                    pass
+
+        return {
+            "total_products": total_products,
+            "total_stock_value": round(total_stock_value, 2),
+            "low_stock_count": low_stock_count,
+            "expiring_count": expiring_count,
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get('/alerts')
+async def get_alerts(
+    token: str = Query(...),
+    inventory_service: InventoryService = Depends(get_inventory_service)
+):
+    """Productos con stock bajo (<=5) o proximos a vencer (<=30 dias)."""
+    try:
+        rows = inventory_service.inventory_sheet.get_all_values()
+        if not rows or len(rows) < 2:
+            return {"low_stock": [], "expiring": []}
+
+        low_stock = []
+        expiring = []
+        today = datetime.date.today()
+
+        for row in rows[1:]:
+            if len(row) < 8:
+                continue
+            name = str(row[2]) if len(row) > 2 else ""
+            sku = str(row[1]) if len(row) > 1 else ""
+            if sku.endswith(".0"):
+                sku = sku[:-2]
+            stock = int(row[4]) if len(row) > 4 and str(row[4]).isdigit() else 0
+            unit = str(row[5]) if len(row) > 5 else "UND"
+            exp_str = str(row[8]) if len(row) > 8 else ""
+
+            if 0 < stock <= 5:
+                low_stock.append({"sku": sku, "name": name, "stock": stock, "unit": unit})
+
+            if exp_str:
+                try:
+                    exp_date = datetime.datetime.strptime(exp_str, "%Y-%m-%d").date()
+                    days = (exp_date - today).days
+                    if days <= 30:
+                        expiring.append({"sku": sku, "name": name, "expiration_date": exp_str, "days_left": days})
+                except Exception:
+                    pass
+
+        return {"low_stock": low_stock, "expiring": expiring}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 @router.get('/health')
 async def health_check():
