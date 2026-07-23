@@ -157,6 +157,199 @@ export default function AnalyticsPanel({ token }: { token: string }) {
           </table>
         </div>
       </ChartCard>
+
+      {/* Advanced: Demand Forecasts */}
+      {data.advanced?.demand_forecasts?.length > 0 && (
+        <ChartCard title="Prediccion de Demanda (7 dias)" icon="🔮">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {data.advanced.demand_forecasts.slice(0, 6).map(f => (
+              <div key={f.sku} className="rounded-lg border border-gray-200 p-3">
+                <p className="text-sm font-medium text-gray-900 truncate">{f.sku}</p>
+                <div className="flex items-baseline gap-2 mt-1">
+                  <span className="text-xl font-bold text-indigo-600">{f.forecast_7d}</span>
+                  <span className="text-xs text-gray-400">unid/7d</span>
+                </div>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className={`text-xs font-medium ${f.trend === 'up' ? 'text-emerald-600' : f.trend === 'down' ? 'text-red-600' : 'text-gray-400'}`}>
+                    {f.trend === 'up' ? '↑' : f.trend === 'down' ? '↓' : '→'} {f.trend}
+                  </span>
+                  <span className="text-[10px] text-gray-400">{f.method}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </ChartCard>
+      )}
+
+      {/* Advanced: ABC-XYZ */}
+      {data.advanced?.abc_xyz?.length > 0 && (
+        <ChartCard title="Clasificacion ABC-XYZ" icon="🎯">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 mb-4">
+            {['AX','AY','AZ','BX','BY','BZ','CX','CY','CZ'].map(cls => {
+              const count = data.advanced!.abc_xyz.filter(i => i.classification === cls).length;
+              return (
+                <div key={cls} className={`rounded-lg border p-2 text-center ${
+                  cls.startsWith('A') ? 'border-indigo-200 bg-indigo-50' :
+                  cls.startsWith('B') ? 'border-cyan-200 bg-cyan-50' :
+                  'border-gray-200 bg-gray-50'
+                }`}>
+                  <div className="text-lg font-bold text-gray-800">{count}</div>
+                  <div className="text-[10px] font-semibold text-gray-500">{cls}</div>
+                </div>
+              );
+            })}
+          </div>
+          <div className="overflow-x-auto max-h-48">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-b border-gray-100 text-gray-400">
+                  <th className="text-left py-1">SKU</th><th className="text-right py-1">Revenue</th><th className="text-center py-1">ABC</th><th className="text-center py-1">CV</th><th className="text-center py-1">Clase</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {data.advanced.abc_xyz.slice(0, 15).map(item => (
+                  <tr key={item.sku}>
+                    <td className="py-1 text-gray-700">{item.sku}</td>
+                    <td className="py-1 text-right text-gray-600">${item.total_revenue.toLocaleString()}</td>
+                    <td className="py-1 text-center"><span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${item.abc === 'A' ? 'bg-indigo-100 text-indigo-700' : item.abc === 'B' ? 'bg-cyan-100 text-cyan-700' : 'bg-gray-100 text-gray-500'}`}>{item.abc}</span></td>
+                    <td className="py-1 text-center text-gray-500">{item.cv.toFixed(2)}</td>
+                    <td className="py-1 text-center font-mono text-[10px] font-bold">{item.classification}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </ChartCard>
+      )}
+
+      {/* Advanced: Reorder Recommendations */}
+      {data.advanced?.reorder_recommendations?.length > 0 && (
+        <ChartCard title="Punto de Reorden (lead time 3d, 95%)" icon="📋">
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-b border-gray-100 text-gray-400">
+                  <th className="text-left py-2">Producto</th><th className="text-right py-2">Stock</th><th className="text-right py-2">Demanda/d</th><th className="text-right py-2">ROP</th><th className="text-right py-2">Dias</th><th className="text-right py-2">Pedir</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {data.advanced.reorder_recommendations.map(r => (
+                  <tr key={r.sku} className="hover:bg-gray-50">
+                    <td className="py-1.5 text-gray-700 truncate max-w-[120px]">{r.name}</td>
+                    <td className="py-1.5 text-right text-gray-600">{r.current_stock}</td>
+                    <td className="py-1.5 text-right text-gray-500">{r.daily_demand}</td>
+                    <td className="py-1.5 text-right font-mono text-gray-800">{r.reorder_point}</td>
+                    <td className="py-1.5 text-right">
+                      <span className={`font-medium ${r.days_until_reorder <= 0 ? 'text-red-600' : r.days_until_reorder <= 3 ? 'text-amber-600' : 'text-gray-500'}`}>
+                        {r.days_until_reorder <= 0 ? 'YA' : r.days_until_reorder}
+                      </span>
+                    </td>
+                    <td className="py-1.5 text-right font-semibold text-indigo-600">{r.recommended_order}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </ChartCard>
+      )}
+
+      {/* Advanced: Anomalies */}
+      {data.advanced?.anomalies?.length > 0 && (
+        <ChartCard title="Anomalias de Venta (z-score)" icon="⚠️">
+          <div className="space-y-2">
+            {data.advanced.anomalies.slice(-6).reverse().map((a, i) => (
+              <div key={i} className={`flex items-center justify-between px-4 py-2 rounded-lg border ${
+                a.type === 'spike' ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200'
+              }`}>
+                <div>
+                  <span className="text-sm font-medium text-gray-800">{a.date}</span>
+                  <span className="text-xs text-gray-500 ml-2">Esperado: ${a.expected.toLocaleString()}</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className={`text-sm font-bold ${a.type === 'spike' ? 'text-emerald-700' : 'text-red-700'}`}>
+                    ${a.revenue.toLocaleString()}
+                  </span>
+                  <span className={`text-xs font-mono px-2 py-0.5 rounded-full ${
+                    a.type === 'spike' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
+                  }`}>
+                    z={a.z_score} {a.type === 'spike' ? '↑' : '↓'}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </ChartCard>
+      )}
+
+      {/* Advanced: Correlations */}
+      {data.advanced?.correlations?.length > 0 && (
+        <ChartCard title="Productos que se Venden Juntos" icon="🔗">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {data.advanced.correlations.slice(0, 6).map((c, i) => (
+              <div key={i} className="flex items-center gap-3 px-4 py-3 rounded-lg border border-gray-200 bg-gray-50/50">
+                <div className={`w-2 h-2 rounded-full ${c.strength === 'strong' ? 'bg-indigo-500' : 'bg-cyan-400'}`} />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-gray-800 truncate">{c.product_a}</p>
+                  <p className="text-sm text-gray-800 truncate">{c.product_b}</p>
+                </div>
+                <span className="text-xs font-bold text-indigo-600">{(c.correlation * 100).toFixed(0)}%</span>
+              </div>
+            ))}
+          </div>
+        </ChartCard>
+      )}
+
+      {/* Advanced: Seasonality */}
+      {data.advanced?.seasonality?.has_seasonality && (
+        <ChartCard title={`Estacionalidad (pico: ${data.advanced.seasonality.peak_month}, valle: ${data.advanced.seasonality.low_month})`} icon="📅">
+          <div className="flex items-end gap-1 h-32">
+            {Object.entries(data.advanced.seasonality.monthly_index).map(([month, val]) => (
+              <div key={month} className="flex-1 flex flex-col items-center gap-1">
+                <span className="text-[10px] text-gray-400">{month}</span>
+                <div
+                  className={`w-full rounded-t ${val >= 1 ? 'bg-indigo-500' : 'bg-gray-300'}`}
+                  style={{ height: `${val * 50}px`, opacity: Math.max(0.3, val / 1.5) }}
+                />
+                <span className="text-[10px] font-medium text-gray-600">{val.toFixed(1)}x</span>
+              </div>
+            ))}
+          </div>
+        </ChartCard>
+      )}
+
+      {/* Advanced: Turnover */}
+      {data.advanced?.turnover?.length > 0 && (
+        <ChartCard title="Rotacion de Inventario" icon="🔄">
+          <div className="overflow-x-auto max-h-64">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-b border-gray-100 text-gray-400">
+                  <th className="text-left py-2">Producto</th><th className="text-right py-2">Vendido</th><th className="text-right py-2">Stock</th><th className="text-right py-2">Rotacion</th><th className="text-right py-2">Dias/venta</th><th className="text-center py-2">Eficiencia</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {data.advanced.turnover.slice(0, 15).map(t => (
+                  <tr key={t.sku}>
+                    <td className="py-1.5 text-gray-700 truncate max-w-[120px]">{t.name}</td>
+                    <td className="py-1.5 text-right text-gray-600">{t.units_sold}</td>
+                    <td className="py-1.5 text-right text-gray-500">{t.current_stock}</td>
+                    <td className="py-1.5 text-right font-mono text-gray-800">{t.turnover_ratio}x</td>
+                    <td className="py-1.5 text-right text-gray-500">{t.days_to_sell}d</td>
+                    <td className="py-1.5 text-center">
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                        t.efficiency === 'high' ? 'bg-emerald-100 text-emerald-700' :
+                        t.efficiency === 'medium' ? 'bg-amber-100 text-amber-700' :
+                        'bg-red-100 text-red-700'
+                      }`}>{t.efficiency}</span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </ChartCard>
+      )}
+
     </div>
   );
 }

@@ -4,6 +4,7 @@ from typing import Optional, List
 import datetime
 from app.services.tenant_service import TenantService
 from app.services.inventory_service import InventoryService
+from app.services.analytics_service import AnalyticsService
 from app.core.config import settings
 
 router = APIRouter(
@@ -495,6 +496,8 @@ async def get_analytics(
             "recommendations": recommendations,
             "total_revenue_90d": round(total_revenue, 2),
             "total_units_sold_90d": sum(v["units_sold"] for v in sales_by_product.values()),
+            # Advanced analytics with pandas + numpy + scipy
+            "advanced": AnalyticsService(products, movements).full_report(),
         }
 
     except Exception as e:

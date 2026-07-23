@@ -118,4 +118,96 @@ export interface AnalyticsResponse {
   recommendations: string[];
   total_revenue_90d: number;
   total_units_sold_90d: number;
+  advanced: AdvancedAnalytics;
+}
+
+export interface AdvancedAnalytics {
+  demand_forecasts: DemandForecast[];
+  abc_xyz: AbcXyzItem[];
+  seasonality: Seasonality;
+  reorder_recommendations: ReorderRecommendation[];
+  anomalies: Anomaly[];
+  correlations: Correlation[];
+  turnover: TurnoverItem[];
+  price_insights: PriceInsight[];
+}
+
+export interface DemandForecast {
+  sku: string;
+  forecast: number;
+  forecast_7d: number;
+  method: string;
+  alpha: number;
+  daily_avg: number;
+  std_dev: number;
+  confidence: number;
+  trend: string;
+}
+
+export interface AbcXyzItem {
+  sku: string;
+  total_revenue: number;
+  total_units: number;
+  avg_price: number;
+  pct: number;
+  abc: string;
+  cv: number;
+  xyz: string;
+  classification: string;
+}
+
+export interface Seasonality {
+  has_seasonality: boolean;
+  monthly_index: Record<string, number>;
+  peak_month: string;
+  low_month: string;
+  strength: number;
+}
+
+export interface ReorderRecommendation {
+  sku: string;
+  name: string;
+  current_stock: number;
+  daily_demand: number;
+  reorder_point: number;
+  days_until_reorder: number;
+  recommended_order: number;
+  service_level: number;
+}
+
+export interface Anomaly {
+  date: string;
+  revenue: number;
+  expected: number;
+  z_score: number;
+  type: 'spike' | 'drop';
+}
+
+export interface Correlation {
+  product_a: string;
+  product_b: string;
+  sku_a: string;
+  sku_b: string;
+  correlation: number;
+  strength: string;
+}
+
+export interface TurnoverItem {
+  sku: string;
+  name: string;
+  units_sold: number;
+  current_stock: number;
+  turnover_ratio: number;
+  days_to_sell: number;
+  efficiency: string;
+}
+
+export interface PriceInsight {
+  sku: string;
+  name: string;
+  price: number;
+  cost: number;
+  margin_pct: number;
+  avg_daily_demand: number;
+  suggested_action: string;
 }
