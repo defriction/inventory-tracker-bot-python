@@ -13,6 +13,7 @@ import OrderTracker from '@/components/OrderTracker';
 import PurchaseOrderBuilder from '@/components/PurchaseOrderBuilder';
 import UsageStats from '@/components/UsageStats';
 import LoginPage from '@/components/LoginPage';
+import PwaInstallBanner from '@/components/PwaInstallBanner';
 
 type Tab = 'dashboard' | 'inventory' | 'analytics' | 'orders' | 'po_builder' | 'usage';
 
@@ -83,6 +84,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-[#f5f6f8]">
+      <PwaInstallBanner />
       {/* Zeus-style Glass Navbar */}
       <nav className={`sticky top-3 z-50 mx-auto max-w-fit transition-all duration-300 ${
         scrollY > 20 ? 'px-4' : 'px-2'
