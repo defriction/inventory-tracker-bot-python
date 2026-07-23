@@ -12,11 +12,28 @@ export default function Home() {
   const [token, setToken] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (token.length >= 6) {
+    if (token.length < 6) return;
+
+    setLoading(true);
+    setError('');
+
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/stats?token=${token}`);
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError(data.detail || 'Token invalido. Verifica e intenta de nuevo.');
+        return;
+      }
       setIsAuthenticated(true);
+    } catch {
+      setError('No se pudo conectar con el servidor. Verifica tu conexion.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -41,6 +58,11 @@ export default function Home() {
               </div>
 
               <form onSubmit={handleLogin} className="space-y-4">
+                {error && (
+                  <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-600 text-center">
+                    {error}
+                  </div>
+                )}
                 <div>
                   <label className="block text-xs font-medium text-gray-500 mb-2 uppercase tracking-wider">
                     Token de Acceso
@@ -60,14 +82,14 @@ export default function Home() {
 
                 <button
                   type="submit"
-                  disabled={token.length < 6}
+                  disabled={token.length < 6 || loading}
                   className="w-full py-3 px-4 rounded-lg text-sm font-medium
                     bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700
                     text-white disabled:opacity-40 disabled:cursor-not-allowed
                     transition-all duration-200 shadow-lg shadow-indigo-500/20"
                   style={{ fontFeatureSettings: "'cv01', 'ss03'" }}
                 >
-                  Ingresar al Dashboard
+                  {loading ? 'Verificando...' : 'Ingresar al Dashboard'}
                 </button>
               </form>
 
