@@ -1,69 +1,135 @@
-# 📦 Manual de Usuario - Chatbot de Inventario
+# 📦 Inventario Inteligente
 
-Bienvenido a tu asistente de inventario inteligente. Este bot te permite gestionar tu inventario en Google Sheets usando lenguaje natural directamente desde Telegram.
-
-## 🚀 Primeros Pasos
-
-Antes de empezar, asegúrate de vincular tu cuenta de Telegram con tu negocio.
-
-1.  Recibirás un **Token de Invitación** (ej: `AB1234`) de tu administrador.
-2.  Envía el comando al bot:
-    `/conectar AB1234`
+SaaS de gestion de inventario para PyMEs colombianas. Bot de Telegram + Dashboard Web + Analytics IA + Pedidos + PDF.
 
 ---
 
-## 📋 Acciones Disponibles
+## 🚀 Funcionalidades
 
-El bot entiende instrucciones como si hablaras con una persona. Aquí tienes ejemplos de lo que puedes hacer:
+### Bot de Telegram (`@SmartInventoryBot`)
+- Registro de productos con IA (nombre, precio, categoria, unidad, ubicacion, vencimiento, INVIMA, lote)
+- Ventas y compras por lenguaje natural ("Vendi 2 esferos", "Llegaron 10 cajas")
+- Consultas de stock, precio y vencimiento
+- Listados por categoria, ubicacion, stock bajo, vencimiento
+- Busqueda inteligente con multi-match: si hay varios productos similares, pregunta cual exactamente
+- Actualizacion de productos (precio, stock, nombre, SKU, ubicacion)
+- Multi-tenant: cada PyME tiene su Google Sheet independiente
+- Autenticacion por token de invitacion
 
-### 1. Crear Productos Nuevos
-Registra productos indicando su nombre y precio. El bot intentará deducir la categoría y unidad automáticamente.
+### Dashboard Web (PWA)
+- **Login** con validacion de token via API
+- **Sesion persistente** en localStorage (no pide token al recargar)
+- **Tema light** profesional con diseno Linear-style
+- **Iconos lucide-react** en toda la interfaz
+- **PWA instalable** en movil (Android + iOS) con service worker
+- **Responsive** mobile-first con navegacion por iconos
 
-*   **Básico:** "Crea Martillo de uña a 15000"
-*   **Con ubicación:** "Crea Pintura Blanca en Estante 4 a 45000"
-*   **Con vencimiento:** "Crea Leche Colanta vence el 20/12/2026"
-*   **Con costo y precio:** "Crea Cable #12 costo 1000 venta 2500"
+#### Pestañas del Dashboard:
 
-### 2. Registrar Ventas (Salidas)
-Descuenta unidades del inventario.
-
-*   "Vendí 2 martillos"
-*   "Salieron 5 bultos de cemento"
-*   "Facturar 3 galones de thinner"
-
-### 3. Registrar Compras (Entradas)
-Aumenta el stock cuando llega mercancía.
-
-*   "Llegaron 10 cajas de tornillos"
-*   "Compré 50 metros de manguera"
-*   "Ingresa 5 unidades de silicona"
-
-### 4. Consultar Precios y Stock
-Pregunta por un producto para ver su información detallada (Precio, Stock, Ubicación, Vencimiento).
-
-*   "¿Cuánto vale el tubo pvc?"
-*   "Precio del cemento"
-*   "¿Hay stock de pintura roja?"
-
-### 5. Actualizar Productos
-Modifica cualquier dato de un producto existente.
-
-*   **Precio:** "Actualiza precio de Martillo a 18000"
-*   **Stock (Ajuste):** "Pon el stock de tornillos en 100"
-*   **Ubicación:** "Mueve el Cemento a la Bodega 2"
-*   **Nombre:** "Cambia el nombre de 'Tubo' a 'Tubo PVC 1/2'"
-
-### 6. Reportes y Listados 📊
-Pide listas de productos según diferentes criterios.
-
-*   **Por Ubicación:** "¿Qué hay en el Estante 1?"
-*   **Stock Bajo:** "¿Qué se está acabando?" o "Productos con poco stock"
-*   **Vencimientos:** "¿Qué productos están por vencer?"
-*   **General:** "Listar todo"
+| Pestana | Funcionalidad |
+|---|---|
+| **Dashboard** | KPIs (productos, valor inventario, stock bajo, vencimientos), ultimos movimientos, notificaciones colapsables |
+| **Inventario** | Tabla completa con paginacion, filtros (categoria, stock), ordenamiento por columnas, busqueda |
+| **Analytics** | Revenue 90d, tendencia de ventas, top sellers, ABC Pareto, prediccion de demanda, ABC-XYZ, punto de reorden, anomalias, correlaciones, estacionalidad, rotacion, analisis de precios |
+| **Pedidos** | Tracking de pedidos a proveedores con SQLite, estados (pendiente/en transito/entregado/cancelado), guias y URLs de rastreo |
+| **Armar Pedido** | Constructor de ordenes de compra desde inventario real, cantidades sugeridas inteligentes, PDF profesional con reportlab, boton "Recibir" que actualiza Google Sheets |
 
 ---
 
-## 💡 Consejos
-*   **Sé específico:** Si tienes productos con nombres similares (ej: "Tubo 1/2" y "Tubo 3/4"), trata de escribir el nombre completo o el bot te preguntará o elegirá el más parecido.
-*   **Fechas:** Puedes decir "vence el 30 de octubre" y el bot calculará el año automáticamente.
-*   **Errores:** Si te equivocas en una venta, puedes corregirlo haciendo una "Compra" por la misma cantidad o usando "Actualiza stock".
+## 🧠 Analytics Avanzado (pandas + numpy + scipy)
+
+| Tecnica | Libreria | Descripcion |
+|---|---|---|
+| Prediccion de demanda | `pandas.ewm()` | Suavizacion exponencial, forecast 7 dias |
+| ABC-XYZ | `pandas.groupby()` + CV | Clasificacion por revenue + variabilidad |
+| Punto de reorden (ROP) | `scipy.stats.norm.ppf()` | Safety stock con nivel de servicio 95% |
+| Anomalias | Rolling Z-Score `pandas.rolling()` | Deteccion de spikes/drops |
+| Correlaciones | `pandas.DataFrame.corr()` | Productos que se venden juntos |
+| Estacionalidad | `pandas.resample('ME')` | Patrones mensuales |
+| Rotacion | Turnover Ratio | Eficiencia de inventario |
+| Rendimiento usuarios | `pandas.groupby()` | Ventas por empleado, ticket promedio |
+| Patrones horarios/semanales | `pandas.dt.hour/dayofweek` | Horas pico, dias fuertes |
+
+---
+
+## 🏗️ Arquitectura
+
+```
+inventory-tracker-bot-python/
+├── app/
+│   ├── main.py                    # FastAPI app
+│   ├── core/
+│   │   ├── config.py              # Settings (pydantic)
+│   │   ├── google_client.py       # Google Sheets OAuth
+│   │   └── cache.py               # Redis + in-memory cache
+│   ├── routers/
+│   │   ├── webhook.py             # Telegram webhook
+│   │   ├── api.py                 # REST API (inventory, stats, analytics, receive-order)
+│   │   ├── admin.py               # Admin (create tenant)
+│   │   └── orders.py              # CRUD pedidos + PDF
+│   └── services/
+│       ├── inventory_service.py   # Operaciones Google Sheets
+│       ├── ia_service.py          # Groq IA para interpretar mensajes
+│       ├── tenant_service.py      # Gestion multi-tenant
+│       ├── analytics_service.py   # pandas + numpy + scipy
+│       ├── order_service.py       # SQLite pedidos
+│       └── po_pdf.py              # reportlab PDF generator
+├── front/
+│   └── src/
+│       ├── app/                   # Next.js App Router
+│       ├── components/            # React components
+│       │   ├── StatsCards.tsx     # KPIs
+│       │   ├── AlertsPanel.tsx    # Notificaciones
+│       │   ├── RecentMovements.tsx
+│       │   ├── InventoryTable.tsx # Tabla con paginacion
+│       │   ├── AnalyticsPanel.tsx # Graficos recharts
+│       │   ├── OrderTracker.tsx   # Seguimiento pedidos
+│       │   ├── PurchaseOrderBuilder.tsx  # Constructor OC + PDF
+│       │   └── PwaInstallBanner.tsx
+│       ├── lib/api.ts             # Fetch functions
+│       └── types/index.ts         # TypeScript interfaces
+├── docker-compose.yml             # Traefik, Redis, bot, frontend
+├── requirements.txt               # Python deps
+└── ANALYTICS.md                   # Documentacion tecnica de analitica
+```
+
+---
+
+## 🔧 Stack Tecnologico
+
+| Capa | Tecnologia |
+|---|---|
+| Backend | Python 3.11, FastAPI, Uvicorn |
+| Bot | python-telegram-bot, Groq AI |
+| Base de datos | Google Sheets (inventario), SQLite (pedidos) |
+| Cache | Redis 7 |
+| Analytics | pandas, numpy, scipy |
+| PDF | reportlab |
+| Frontend | Next.js 16, React 19, TypeScript, Tailwind CSS 4 |
+| Graficos | recharts |
+| Iconos | lucide-react |
+| PWA | Service Worker, Web Manifest |
+| Deploy | Docker, Traefik, GitHub Actions, VPS |
+
+---
+
+## 💰 Modelo de Negocio
+
+**Plan Unico — $30.000 COP/mes** (anual: $300.000 = 2 meses gratis)
+
+- Todo incluido: bot Telegram + dashboard + analytics + pedidos + PDF
+- Usuarios ilimitados por PyME
+- Productos ilimitados
+- PWA instalable
+- Soporte WhatsApp
+
+---
+
+## 🔒 Infraestructura
+
+- **Dominio:** inventory.defriction.org
+- **SSL:** Let's Encrypt via Traefik
+- **CI/CD:** GitHub Actions (push to main → deploy automatico)
+- **Cache:** Redis compartido entre workers
+- **Rate limiting:** Cache 60s en todos los endpoints (evita 429 de Google Sheets)
+- **Persistencia:** SQLite en volumen Docker para pedidos
