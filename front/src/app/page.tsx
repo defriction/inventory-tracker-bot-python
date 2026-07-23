@@ -12,8 +12,14 @@ import PwaInstallBanner from '@/components/PwaInstallBanner';
 type Tab = 'dashboard' | 'inventory' | 'analytics';
 
 export default function Home() {
-  const [token, setToken] = useState('');
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [token, setToken] = useState(() => {
+    if (typeof window !== 'undefined') return localStorage.getItem('inventory_token') || '';
+    return '';
+  });
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    if (typeof window !== 'undefined') return localStorage.getItem('inventory_auth') === 'true';
+    return false;
+  });
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -31,6 +37,8 @@ export default function Home() {
         return;
       }
       setIsAuthenticated(true);
+      localStorage.setItem('inventory_token', token);
+      localStorage.setItem('inventory_auth', 'true');
     } catch {
       setError('No se pudo conectar con el servidor.');
     } finally {
@@ -90,7 +98,7 @@ export default function Home() {
                 <TabButton active={activeTab === 'analytics'} onClick={() => setActiveTab('analytics')}><BarChart3 className="w-4 h-4 sm:mr-1.5" /><span className="hidden sm:inline">Analytics</span></TabButton>
               </div>
             </div>
-            <button onClick={() => setIsAuthenticated(false)} className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-700 transition-colors px-3 py-1.5 rounded-md hover:bg-gray-100">
+            <button onClick={() => { setIsAuthenticated(false); localStorage.removeItem('inventory_token'); localStorage.removeItem('inventory_auth'); }} className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-700 transition-colors px-3 py-1.5 rounded-md hover:bg-gray-100">
               <LogOut className="w-3.5 h-3.5" /> Salir
             </button>
           </div>
