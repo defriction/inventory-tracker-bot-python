@@ -79,14 +79,16 @@ def interpret_intent(user_text: str) -> dict:
 
     REGLAS PARA "LISTAR":
     - Usa "accion": "LISTAR" cuando el usuario pida ver un grupo de productos (no uno solo).
-    - "criterio" permitido: "ubicacion", "vencimiento", "stock_bajo", "todos".
+    - "criterio" permitido: "ubicacion", "vencimiento", "stock_bajo", "todos", "categoria".
     - Si menciona lugar fisico (bodega, estante, vitrina, mostrador, almacen, deposito, pasillo, nevera, cuarto), usar:
       {"accion": "LISTAR", "criterio": "ubicacion", "ubicacion": "<lugar extraido>"}
     - "ubicacion": extraer el lugar de forma limpia, sin palabras de relleno.
     - Si pide "todo", "inventario completo", "lista general", "todo lo que tengo", usar "todos".
     - Si pregunta por "por vencer", "vencidos", "se vencen", "proximos a vencer", usar "vencimiento".
     - Si pregunta por "poco stock", "bajo inventario", "por acabarse", "se esta acabando", "faltantes", usar "stock_bajo".
-    - Si la frase es ambigua y no menciona ubicacion/vencimiento/stock bajo, prioriza "todos".
+    - Si pregunta por una categoria especifica (ej: "papeleria", "herramientas", "electricos", "medicamentos", "aseo"), usar:
+      {"accion": "LISTAR", "criterio": "categoria", "categoria": "<categoria extraida>"}
+    - Si la frase es ambigua y no menciona ubicacion/vencimiento/stock bajo/categoria, prioriza "todos".
 
     EJEMPLOS DE LISTAR:
     - "Que hay en la Bodega" -> {"accion": "LISTAR", "criterio": "ubicacion", "ubicacion": "Bodega"}
@@ -98,6 +100,9 @@ def interpret_intent(user_text: str) -> dict:
     - "Dame productos con poco stock" -> {"accion": "LISTAR", "criterio": "stock_bajo"}
     - "Muestrame todo el inventario" -> {"accion": "LISTAR", "criterio": "todos"}
     - "Que tengo en inventario" -> {"accion": "LISTAR", "criterio": "todos"}
+    - "Muestrame papeleria" -> {"accion": "LISTAR", "criterio": "categoria", "categoria": "Papeleria"}
+    - "Que hay en herramientas" -> {"accion": "LISTAR", "criterio": "categoria", "categoria": "Herramientas"}
+    - "Dame los productos de aseo" -> {"accion": "LISTAR", "criterio": "categoria", "categoria": "Aseo"}
 
     REGLA PARA "FECHA_VENCIMIENTO":
     - Solo si el usuario menciona una fecha explicita de caducidad.

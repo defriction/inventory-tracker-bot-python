@@ -430,6 +430,7 @@ class InventoryService:
         """Genera un reporte de productos según criterio"""
         criterio = intent.get('criterio')
         loc_filter = intent.get('ubicacion')
+        cat_filter = intent.get('categoria')
 
         logger.info(f" Generando lista por criterio: {criterio}")
 
@@ -450,6 +451,7 @@ class InventoryService:
             if str(sku).endswith(".0"):
                 sku = str(sku)[:-2]
             name = row[2] if len(row) > 2 else "Producto sin nombre"
+            cat = row[3] if len(row) > 3 else ""
             stock = int(row[4]) if row[4].isdigit() else 0
             exp_str = row[8]
             loc = row[9]
@@ -477,6 +479,10 @@ class InventoryService:
                     except:
                         pass # Fecha inválida, ignorar
 
+            elif criterio == "categoria":
+                if cat_filter and self._normalize(cat_filter) in self._normalize(cat):
+                    match = True
+
             elif criterio == "todos":
                 match = True
             if match:
@@ -500,6 +506,7 @@ class InventoryService:
             "ubicacion": f"📍 Reporte por Ubicación: {self._escape(loc_filter)}",
             "stock_bajo": "⚠️ Productos con Stock Bajo",
             "vencimiento": "📅 Productos por Vencer o Vencidos",
+            "categoria": f"📂 Categoría: {self._escape(cat_filter)}",
             "todos": "📋 Inventario Completo"
         }
         title = title_map.get(criterio, f"📊 Reporte: {self._escape(criterio.upper())}")
