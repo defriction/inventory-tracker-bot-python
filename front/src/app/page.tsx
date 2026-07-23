@@ -21,7 +21,7 @@ const navItems: { id: Tab; label: string; icon: any; adminOnly?: boolean }[] = [
   { id: 'inventory', label: 'Inventario', icon: Package },
   { id: 'analytics', label: 'Analytics', icon: BarChart3 },
   { id: 'orders', label: 'Pedidos', icon: Truck },
-  { id: 'po_builder', label: 'Pedido', icon: FileText },
+  { id: 'po_builder', label: 'Armar Pedido', icon: FileText },
   { id: 'usage', label: 'Uso', icon: Activity, adminOnly: true },
 ];
 
@@ -109,13 +109,13 @@ export default function Home() {
               <button
                 key={item.id}
                 onClick={() => setActiveTab(item.id)}
-                className={`relative flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-medium transition-all duration-300 ${
+                className={`relative flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 ${
                   activeTab === item.id
                     ? 'bg-white text-gray-900 shadow-sm shadow-black/[0.03] scale-[1.02]'
                     : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100/50'
                 }`}
               >
-                <item.icon className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${activeTab === item.id ? 'text-indigo-600' : 'text-gray-400'}`} />
+                <item.icon className={`w-4 h-4 ${activeTab === item.id ? 'text-indigo-600' : 'text-gray-400'}`} />
                 <span className="hidden sm:inline">{item.label}</span>
                 {/* Active indicator dot for mobile */}
                 {activeTab === item.id && (
