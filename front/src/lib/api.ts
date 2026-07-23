@@ -1,6 +1,6 @@
 import { Product, InventoryResponse } from '@/types';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://inventory-api.defriction.org';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
 export async function getInventory(tenantToken: string): Promise<InventoryResponse> {
   const res = await fetch(`${API_URL}/api/inventory?token=${tenantToken}`, {
@@ -15,11 +15,10 @@ export async function getInventory(tenantToken: string): Promise<InventoryRespon
 }
 
 export async function updateProduct(token: string, product: Partial<Product>): Promise<Product> {
-  const res = await fetch(`${API_URL}/api/products/${product.sku}`, {
+  const res = await fetch(`${API_URL}/api/products/${product.sku}?token=${token}`, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`,
     },
     body: JSON.stringify(product),
   });

@@ -15,20 +15,24 @@ services:
     labels:
       - "traefik.enable=true"
       
-      # --- API BACKEND ---
-      - "traefik.http.routers.inventory-api.rule=Host(`inventory-api.defriction.org`)"
+      # --- API BACKEND (mismo dominio, path /api) ---
+      - "traefik.http.routers.inventory-api.rule=Host(`inventory.defriction.org`) && PathPrefix(`/api`)"
       - "traefik.http.routers.inventory-api.entrypoints=websecure"
       - "traefik.http.routers.inventory-api.tls=true"
       - "traefik.http.routers.inventory-api.tls.certresolver=mytlschallenge"
       - "traefik.http.services.inventory-api.loadbalancer.server.port=8000"
       
-      # --- LEGADO (opcional, para transición) ---
-      - "traefik.http.routers.inventory-bot-legacy.rule=Host(`n8n.srv1153123.hstgr.cloud`) && PathPrefix(`/inventory`)"
-      - "traefik.http.routers.inventory-bot-legacy.entrypoints=websecure"
-      - "traefik.http.routers.inventory-bot-legacy.tls=true"
-      - "traefik.http.routers.inventory-bot-legacy.tls.certresolver=mytlschallenge"
-      - "traefik.http.middlewares.inventory-strip.stripprefix.prefixes=/inventory"
-      - "traefik.http.routers.inventory-bot-legacy.middlewares=inventory-strip@docker"
+      # --- WEBHOOK TELEGRAM (path /webhook) ---
+      - "traefik.http.routers.inventory-webhook.rule=Host(`inventory.defriction.org`) && PathPrefix(`/webhook`)"
+      - "traefik.http.routers.inventory-webhook.entrypoints=websecure"
+      - "traefik.http.routers.inventory-webhook.tls=true"
+      - "traefik.http.routers.inventory-webhook.tls.certresolver=mytlschallenge"
+      
+      # --- ADMIN (path /admin) ---
+      - "traefik.http.routers.inventory-admin.rule=Host(`inventory.defriction.org`) && PathPrefix(`/admin`)"
+      - "traefik.http.routers.inventory-admin.entrypoints=websecure"
+      - "traefik.http.routers.inventory-admin.tls=true"
+      - "traefik.http.routers.inventory-admin.tls.certresolver=mytlschallenge"
       
       - "traefik.docker.network=proxy"
 
@@ -42,12 +46,15 @@ services:
     labels:
       - "traefik.enable=true"
       
-      # --- DOMINIO PRINCIPAL ---
+      # --- FRONTEND (raíz del dominio) ---
       - "traefik.http.routers.inventory-front.rule=Host(`inventory.defriction.org`)"
       - "traefik.http.routers.inventory-front.entrypoints=websecure"
       - "traefik.http.routers.inventory-front.tls=true"
       - "traefik.http.routers.inventory-front.tls.certresolver=mytlschallenge"
       - "traefik.http.services.inventory-front.loadbalancer.server.port=3000"
+      
+      # Prioridad: front debe evaluarse DESPUÉS de api/webhook/admin
+      - "traefik.http.routers.inventory-front.priority=1"
       
       - "traefik.docker.network=proxy"
 
