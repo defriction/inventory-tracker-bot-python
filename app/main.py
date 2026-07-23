@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from app.core.config import settings
-from app.routers import admin, webhook, api, orders
+from app.routers import admin, webhook, api, orders, usage
 
 app = FastAPI(
     title='Saas Inventory Bot',
@@ -12,6 +12,7 @@ app.include_router(admin.router)
 app.include_router(webhook.router)
 app.include_router(api.router)
 app.include_router(orders.router)
+app.include_router(usage.router)
 
 @app.get('/')
 def read_root():

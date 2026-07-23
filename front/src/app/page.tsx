@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Bot, LayoutDashboard, Package, BarChart3, LogOut, Truck, FileText } from 'lucide-react';
 import StatsCards from '@/components/StatsCards';
 import AlertsPanel from '@/components/AlertsPanel';
@@ -25,6 +25,16 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Track tab switches for usage analytics
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const tabLabels: Record<string, string> = { dashboard: 'Dashboard', inventory: 'Inventario', analytics: 'Analytics', orders: 'Pedidos', po_builder: 'Armar Pedido' };
+    fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/usage/track?token=${token}`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ event: 'tab_view', category: 'navigation', tab: tabLabels[activeTab] || activeTab }),
+    }).catch(() => {});
+  }, [activeTab, isAuthenticated]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
