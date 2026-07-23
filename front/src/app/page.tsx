@@ -27,20 +27,24 @@ const navItems: { id: Tab; label: string; icon: any; adminOnly?: boolean }[] = [
 ];
 
 export default function Home() {
-  const [token, setToken] = useState(() => {
-    if (typeof window !== 'undefined') return localStorage.getItem('inventory_token') || '';
-    return '';
-  });
-  const [isAuthenticated, setIsAuthenticated] = useState(() => {
-    if (typeof window !== 'undefined') return localStorage.getItem('inventory_auth') === 'true';
-    return false;
-  });
+  const [token, setToken] = useState('');
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [hydrated, setHydrated] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [scrollY, setScrollY] = useState(0);
 
   const isAdmin = token === '3HF784F';
+
+  // Hydrate auth state from localStorage after mount (avoids React hydration mismatch #418)
+  useEffect(() => {
+    const storedToken = localStorage.getItem('inventory_token') || '';
+    const storedAuth = localStorage.getItem('inventory_auth') === 'true';
+    setToken(storedToken);
+    setIsAuthenticated(storedAuth);
+    setHydrated(true);
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => setScrollY(window.scrollY);
@@ -84,12 +88,16 @@ export default function Home() {
     finally { setLoading(false); }
   };
 
+  if (!hydrated) {
+    return <div className="min-h-screen bg-[#f5f6f8]" />;
+  }
+
   if (!isAuthenticated) return <LoginPage onLogin={handleLogin} loading={loading} error={error} />;
 
   const visibleNav = navItems.filter(n => !n.adminOnly || isAdmin);
 
   return (
-    <div className="min-h-screen bg-[#f5f6f8]" suppressHydrationWarning>
+    <div className="min-h-screen bg-[#f5f6f8]">
       <PwaInstallBanner />
       {/* Zeus-style Glass Navbar */}
       <nav className={`sticky top-3 z-50 mx-auto max-w-fit transition-all duration-300 ${
