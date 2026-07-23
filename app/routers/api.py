@@ -550,3 +550,40 @@ async def get_analytics(
 async def health_check():
     """Health check para el frontend"""
     return {"status": "ok", "service": "inventory-api"}
+
+
+class ReceiveOrderItem(BaseModel):
+    sku: str
+    name: str
+    quantity: int
+
+
+class ReceiveOrderRequest(BaseModel):
+    items: list[ReceiveOrderItem]
+    user_name: str = "Sistema"
+
+
+@router.post('/receive-order')
+async def receive_order(
+    data: ReceiveOrderRequest,
+    token: str = Query(...),
+    inventory_service: InventoryService = Depends(get_inventory_service)
+):
+    """Registra la recepcion de un pedido: suma stock por cada producto."""
+    messages = []
+    for item in data.items:
+        row_idx, real_name = inventory_service._find_product_row_by_keyword(item.sku, exact_match=True)
+        if not row_idx:
+            messages.append(f"⚠️ {item.name}: no encontrado en inventario")
+            continue
+        current_stock = int(inventory_service.inventory_sheet.cell(row_idx, 5).value or 0)
+        new_stock = current_stock + item.quantity
+        inventory_service.inventory_sheet.update_cell(row_idx, 5, new_stock)
+        inventory_service._log_movement("COMPRA", item.sku, real_name, item.quantity, data.user_name, "Recepcion de pedido")
+        messages.append(f"✅ {real_name}: {current_stock} → {new_stock}")
+
+    # Invalidate caches
+    from app.core.cache import invalidate_pattern
+    invalidate_pattern(f"*:{token}*")
+
+    return {"status": "ok", "messages": messages}
