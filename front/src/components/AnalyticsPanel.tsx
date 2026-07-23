@@ -423,6 +423,131 @@ export default function AnalyticsPanel({ token }: { token: string }) {
           </div>
         </SectionCard>
       )}
+
+      {/* User Performance */}
+      {data.advanced?.user_performance?.length > 0 && (
+        <SectionCard title="Rendimiento por Usuario" icon="👥" description="Mide la productividad de cada persona que registra operaciones. Identifica quien vende mas, quien tiene mejor ticket promedio, y quien mueve mas productos. Util para incentivos, comisiones y detectar necesidades de capacitacion.">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-100 text-gray-400 text-xs">
+                  <th className="text-left py-2 font-medium">Usuario</th>
+                  <th className="text-right py-2 font-medium">Ingresos</th>
+                  <th className="text-right py-2 font-medium">Unidades</th>
+                  <th className="text-right py-2 font-medium">Dias activo</th>
+                  <th className="text-right py-2 font-medium">Productos</th>
+                  <th className="text-right py-2 font-medium">Ticket prom</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {data.advanced.user_performance.map(u => (
+                  <tr key={u.user} className="hover:bg-gray-50">
+                    <td className="py-2 text-gray-800 font-medium">{u.user}</td>
+                    <td className="py-2 text-right text-gray-600">${u.total_revenue.toLocaleString()}</td>
+                    <td className="py-2 text-right text-gray-600">{u.total_units_sold}</td>
+                    <td className="py-2 text-right text-gray-500">{u.active_days}</td>
+                    <td className="py-2 text-right text-gray-500">{u.unique_products}</td>
+                    <td className="py-2 text-right font-semibold text-indigo-600">${u.avg_ticket.toLocaleString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </SectionCard>
+      )}
+
+      {/* Peak Hours */}
+      {data.advanced?.peak_hours?.length > 0 && data.advanced.peak_hours.some(h => h.revenue > 0) && (
+        <SectionCard title="Horas Pico de Venta" icon="⏰" description="Descubre en que franjas horarias vendes mas. Programa a tu personal en las horas de mayor movimiento, prepara el inventario antes de los picos, y evita tener gente sin hacer nada en horas valle.">
+          <div className="flex items-end gap-1 h-32">
+            {data.advanced.peak_hours.map(h => (
+              <div key={h.hour} className="flex-1 flex flex-col items-center gap-1">
+                <div className={`w-full rounded-t transition-all ${
+                  h.revenue > 0 ? 'bg-indigo-500' : 'bg-gray-200'
+                }`}
+                  style={{ height: `${Math.max(4, h.revenue / Math.max(1, ...data.advanced!.peak_hours.map(x => x.revenue)) * 100)}px` }} />
+                <span className="text-[10px] text-gray-400">{h.label}</span>
+              </div>
+            ))}
+          </div>
+          <div className="flex justify-between mt-3 text-[10px] text-gray-400">
+            <span>0:00</span><span>6:00</span><span>12:00</span><span>18:00</span><span>23:00</span>
+          </div>
+        </SectionCard>
+      )}
+
+      {/* Day of Week */}
+      {data.advanced?.day_of_week?.length > 0 && data.advanced.day_of_week.some(d => d.revenue > 0) && (
+        <SectionCard title="Ventas por Dia de la Semana" icon="📆" description="Identifica tus dias fuertes y debiles. Refuerza el inventario antes de los dias pico y aprovecha los dias flojos para hacer inventario, mantenimiento o promociones especiales que atraigan clientes.">
+          <div className="flex items-end gap-3 h-36 px-2">
+            {data.advanced.day_of_week.map(d => {
+              const maxRev = Math.max(1, ...data.advanced!.day_of_week.map(x => x.revenue));
+              return (
+                <div key={d.day} className="flex-1 flex flex-col items-center gap-1.5">
+                  <span className="text-xs font-semibold text-gray-700">{d.transactions}</span>
+                  <div className={`w-full rounded-t-lg transition-all ${
+                    d.revenue / maxRev > 0.7 ? 'bg-indigo-500' :
+                    d.revenue / maxRev > 0.3 ? 'bg-indigo-300' : 'bg-gray-200'
+                  }`}
+                    style={{ height: `${Math.max(8, d.revenue / maxRev * 110)}px` }} />
+                  <span className="text-[11px] text-gray-500 font-medium">{d.label.slice(0, 3)}</span>
+                </div>
+              );
+            })}
+          </div>
+        </SectionCard>
+      )}
+
+      {/* Adjustments */}
+      {data.advanced?.adjustment_analysis?.length > 0 && (
+        <SectionCard title="Productos con Mas Ajustes" icon="🔧" description="Productos que requieren correcciones frecuentes de inventario. Puede indicar errores en el registro, robos, mermas no reportadas, o problemas de calidad. Investiga la causa raiz para reducir perdidas.">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-100 text-gray-400 text-xs">
+                  <th className="text-left py-2 font-medium">Producto</th>
+                  <th className="text-right py-2 font-medium">Ajustes</th>
+                  <th className="text-right py-2 font-medium">Cantidad total</th>
+                  <th className="text-right py-2 font-medium">Stock actual</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {data.advanced.adjustment_analysis.map(a => (
+                  <tr key={a.sku} className="hover:bg-gray-50">
+                    <td className="py-2 text-gray-800 truncate max-w-[160px]">{a.name}</td>
+                    <td className="py-2 text-right">
+                      <span className={`font-semibold text-xs px-2 py-0.5 rounded-full ${
+                        a.adjustment_count > 5 ? 'bg-red-100 text-red-700' :
+                        a.adjustment_count > 2 ? 'bg-amber-100 text-amber-700' :
+                        'bg-gray-100 text-gray-600'
+                      }`}>{a.adjustment_count}</span>
+                    </td>
+                    <td className="py-2 text-right text-gray-600">{a.total_qty_adjusted}</td>
+                    <td className="py-2 text-right text-gray-500">{a.current_stock}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </SectionCard>
+      )}
+
+      {/* Sales vs Purchases */}
+      {data.advanced?.sales_vs_purchases?.length > 0 && (
+        <SectionCard title="Compras vs Ventas" icon="⚖️" description="Compara lo que compras contra lo que vendes dia a dia. Un desbalance prolongado indica que estas acumulando inventario (compras > ventas) o desabasteciendote (ventas > compras). Ajusta tus ordenes de compra segun esta metrica.">
+          <ResponsiveContainer width="100%" height={250}>
+            <BarChart data={data.advanced.sales_vs_purchases.slice(-14)}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+              <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#94a3b8' }} tickFormatter={(d) => d.slice(5)} />
+              <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} width={45} />
+              <Tooltip contentStyle={{ borderRadius: 10, border: '1px solid #e2e8f0', fontSize: 12 }} />
+              <Bar dataKey="sales" name="Ventas" fill="#4f46e5" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="purchases" name="Compras" fill="#06b6d4" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </SectionCard>
+      )}
+
     </div>
   );
 }

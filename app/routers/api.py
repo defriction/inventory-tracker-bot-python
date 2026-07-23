@@ -358,17 +358,24 @@ async def get_analytics(
             if len(row) < 7: continue
             ts_str = str(row[0])
             try:
-                ts = datetime.datetime.strptime(ts_str[:10], "%Y-%m-%d").date()
+                # Probar formato completo con hora: "2026-07-23 14:30:00"
+                ts = datetime.datetime.strptime(ts_str[:19], "%Y-%m-%d %H:%M:%S")
             except:
-                continue
-            if ts < cutoff: continue
+                try:
+                    # Fallback: solo fecha
+                    ts = datetime.datetime.strptime(ts_str[:10], "%Y-%m-%d")
+                except:
+                    continue
+            if ts.date() < cutoff: continue
             movements.append({
-                "date": str(ts),
+                "datetime": ts.isoformat(),
+                "date": str(ts.date()),
                 "type": str(row[2]),
                 "sku": str(row[3]),
                 "name": str(row[4]),
                 "qty": int(row[5]) if str(row[5]).replace('-','').isdigit() else 0,
                 "user": str(row[6]),
+                "notes": str(row[7]) if len(row) > 7 else "",
             })
 
         # --- REVENUE POR PRODUCTO ---

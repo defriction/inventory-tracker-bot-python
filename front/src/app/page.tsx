@@ -41,9 +41,10 @@ export default function Home() {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#f7f8f8]">
-        <div className="w-full max-w-md mx-4">
-          <div className="relative rounded-2xl border border-gray-200 bg-white/90 backdrop-blur-xl p-8 shadow-xl shadow-gray-200/50">
+      <>
+      <div className="min-h-screen flex items-center justify-center bg-[#f7f8f8] px-4">
+        <div className="w-full max-w-md">
+          <div className="relative rounded-2xl sm:rounded-3xl border border-gray-200 bg-white/90 backdrop-blur-xl p-6 sm:p-8 shadow-xl shadow-gray-200/50">
             <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-100 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl" />
             <div className="absolute bottom-0 left-0 w-48 h-48 bg-violet-100 rounded-full translate-y-1/2 -translate-x-1/2 blur-3xl" />
 
@@ -102,6 +103,10 @@ export default function Home() {
           </div>
         </div>
       </div>
+
+      <PwaInstallBanner />
+
+      </>
     );
   }
 

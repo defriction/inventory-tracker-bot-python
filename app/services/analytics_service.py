@@ -376,6 +376,150 @@ class AnalyticsService:
         return sorted(results, key=lambda x: x['avg_daily_demand'], reverse=True)
 
     # ================================================================
+    # USER PERFORMANCE
+    # ================================================================
+
+    def user_performance(self) -> list:
+        """Rendimiento por usuario: ventas, ticket promedio, productos unicos."""
+        if self.df_sales.empty:
+            return []
+
+        results = []
+        for user in self.df_sales['user'].unique():
+            user_sales = self.df_sales[self.df_sales['user'] == user]
+            total_revenue = user_sales['revenue'].sum()
+            total_units = abs(user_sales['qty'].sum())
+            tx_count = len(user_sales['date'].unique())  # Dias con actividad
+            unique_products = user_sales['sku'].nunique()
+            avg_ticket = total_revenue / tx_count if tx_count > 0 else 0
+
+            results.append({
+                "user": str(user),
+                "total_revenue": round(float(total_revenue), 2),
+                "total_units_sold": int(total_units),
+                "active_days": tx_count,
+                "unique_products": int(unique_products),
+                "avg_ticket": round(float(avg_ticket), 2),
+            })
+
+        return sorted(results, key=lambda x: x['total_revenue'], reverse=True)
+
+    # ================================================================
+    # PEAK HOURS
+    # ================================================================
+
+    def peak_hours(self) -> list:
+        """Ventas por franja horaria."""
+        if self.df_sales.empty or 'datetime' not in self.df_sales.columns:
+            return []
+
+        try:
+            df = self.df_sales.copy()
+            df['hour'] = pd.to_datetime(df['datetime']).dt.hour
+            hourly = df.groupby('hour').agg(
+                revenue=('revenue', 'sum'),
+                transactions=('sku', 'count'),
+            ).reset_index()
+
+            results = []
+            for h in range(24):
+                row = hourly[hourly['hour'] == h]
+                results.append({
+                    "hour": h,
+                    "label": f"{h:02d}:00",
+                    "revenue": round(float(row['revenue'].values[0]), 2) if not row.empty else 0,
+                    "transactions": int(row['transactions'].values[0]) if not row.empty else 0,
+                })
+
+            return results
+        except Exception:
+            return []
+
+    # ================================================================
+    # DAY OF WEEK PATTERNS
+    # ================================================================
+
+    def day_of_week_analysis(self) -> list:
+        """Ventas por dia de la semana."""
+        if self.df_sales.empty:
+            return []
+
+        df = self.df_sales.copy()
+        df['dow'] = pd.to_datetime(df['date']).dt.dayofweek  # 0=Lunes, 6=Domingo
+        dow_names = {0: 'Lunes', 1: 'Martes', 2: 'Miercoles', 3: 'Jueves',
+                     4: 'Viernes', 5: 'Sabado', 6: 'Domingo'}
+
+        dow = df.groupby('dow').agg(
+            revenue=('revenue', 'sum'),
+            transactions=('sku', 'count'),
+        ).reset_index()
+
+        results = []
+        for d in range(7):
+            row = dow[dow['dow'] == d]
+            results.append({
+                "day": int(d),
+                "label": dow_names[d],
+                "revenue": round(float(row['revenue'].values[0]), 2) if not row.empty else 0,
+                "transactions": int(row['transactions'].values[0]) if not row.empty else 0,
+            })
+
+        return results
+
+    # ================================================================
+    # SALES VS PURCHASES TREND
+    # ================================================================
+
+    def sales_vs_purchases(self) -> list:
+        """Comparativa diaria de ventas vs compras."""
+        if self.df_sales.empty and self.df_purchases.empty:
+            return []
+
+        sales_daily = self.df_sales.set_index('date').resample('D')['revenue'].sum().reset_index()
+        sales_daily.columns = ['date', 'sales']
+
+        purchases_daily = self.df_purchases.set_index('date').resample('D')['qty'].sum().abs().reset_index() if not self.df_purchases.empty else pd.DataFrame(columns=['date', 'purchases'])
+        if not purchases_daily.empty:
+            purchases_daily.columns = ['date', 'purchases']
+
+        merged = sales_daily.merge(purchases_daily, on='date', how='outer').fillna(0)
+        merged = merged.sort_values('date').tail(30)
+
+        return [{
+            "date": str(r['date'].date()) if hasattr(r['date'], 'date') else str(r['date']),
+            "sales": round(float(r['sales']), 2),
+            "purchases": round(float(r['purchases']), 2),
+        } for _, r in merged.iterrows()]
+
+    # ================================================================
+    # PRODUCTS WITH MOST ADJUSTMENTS
+    # ================================================================
+
+    def adjustment_analysis(self) -> list:
+        """Productos con mas ajustes de inventario."""
+        adjustments = self.df_movements[self.df_movements['type'].isin(['AJUSTE', 'CREACION'])].copy()
+        if adjustments.empty:
+            return []
+
+        freq = adjustments.groupby('sku').agg(
+            count=('sku', 'count'),
+            total_qty=('qty', lambda x: abs(x).sum()),
+        ).reset_index().sort_values('count', ascending=False)
+
+        results = []
+        for _, row in freq.iterrows():
+            prod = next((p for p in self.products if p['sku'] == row['sku']), None)
+            results.append({
+                "sku": row['sku'],
+                "name": prod['name'] if prod else row['sku'],
+                "adjustment_count": int(row['count']),
+                "total_qty_adjusted": int(row['total_qty']),
+                "current_stock": prod['stock'] if prod else 0,
+            })
+
+        return results[:10]
+
+    # ================================================================
     # FULL REPORT
     # ================================================================
 
@@ -392,4 +536,9 @@ class AnalyticsService:
             "correlations": self.find_correlations(),
             "turnover": self.turnover_analysis(),
             "price_insights": self.price_elasticity(),
+            "user_performance": self.user_performance(),
+            "peak_hours": self.peak_hours(),
+            "day_of_week": self.day_of_week_analysis(),
+            "sales_vs_purchases": self.sales_vs_purchases(),
+            "adjustment_analysis": self.adjustment_analysis(),
         }

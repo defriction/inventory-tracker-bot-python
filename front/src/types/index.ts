@@ -130,6 +130,11 @@ export interface AdvancedAnalytics {
   correlations: Correlation[];
   turnover: TurnoverItem[];
   price_insights: PriceInsight[];
+  user_performance: UserPerformance[];
+  peak_hours: PeakHour[];
+  day_of_week: DayOfWeek[];
+  sales_vs_purchases: SalesVsPurchase[];
+  adjustment_analysis: AdjustmentItem[];
 }
 
 export interface DemandForecast {
@@ -210,4 +215,41 @@ export interface PriceInsight {
   margin_pct: number;
   avg_daily_demand: number;
   suggested_action: string;
+}
+
+export interface UserPerformance {
+  user: string;
+  total_revenue: number;
+  total_units_sold: number;
+  active_days: number;
+  unique_products: number;
+  avg_ticket: number;
+}
+
+export interface PeakHour {
+  hour: number;
+  label: string;
+  revenue: number;
+  transactions: number;
+}
+
+export interface DayOfWeek {
+  day: number;
+  label: string;
+  revenue: number;
+  transactions: number;
+}
+
+export interface SalesVsPurchase {
+  date: string;
+  sales: number;
+  purchases: number;
+}
+
+export interface AdjustmentItem {
+  sku: string;
+  name: string;
+  adjustment_count: number;
+  total_qty_adjusted: number;
+  current_stock: number;
 }
