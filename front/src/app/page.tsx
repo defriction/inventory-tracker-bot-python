@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Bot, LayoutDashboard, Package, BarChart3, LogOut, Truck } from 'lucide-react';
+import { Bot, LayoutDashboard, Package, BarChart3, LogOut, Truck, FileText } from 'lucide-react';
 import StatsCards from '@/components/StatsCards';
 import AlertsPanel from '@/components/AlertsPanel';
 import RecentMovements from '@/components/RecentMovements';
@@ -9,8 +9,9 @@ import InventoryTable from '@/components/InventoryTable';
 import AnalyticsPanel from '@/components/AnalyticsPanel';
 import PwaInstallBanner from '@/components/PwaInstallBanner';
 import OrderTracker from '@/components/OrderTracker';
+import PurchaseOrderBuilder from '@/components/PurchaseOrderBuilder';
 
-type Tab = 'dashboard' | 'inventory' | 'analytics' | 'orders';
+type Tab = 'dashboard' | 'inventory' | 'analytics' | 'orders' | 'po_builder';
 
 export default function Home() {
   const [token, setToken] = useState(() => {
@@ -122,6 +123,10 @@ export default function Home() {
                   <Truck className="w-4 h-4" />
                   <span className="hidden sm:inline ml-1.5">Pedidos</span>
                 </TabButton>
+                <TabButton active={activeTab === 'po_builder'} onClick={() => setActiveTab('po_builder')}>
+                  <FileText className="w-4 h-4" />
+                  <span className="hidden sm:inline ml-1.5">Armar Pedido</span>
+                </TabButton>
               </div>
             </div>
 
@@ -153,27 +158,23 @@ export default function Home() {
           </div>
         ) : activeTab === 'inventory' ? (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="mb-6">
-              <h2 className="text-lg font-semibold text-gray-900 tracking-[-0.3px]" style={{ fontFeatureSettings: "'cv01', 'ss03'" }}>Inventario Completo</h2>
-              <p className="text-sm text-gray-500 mt-1">Busca, filtra y gestiona todos tus productos</p>
-            </div>
+            <div className="mb-6"><h2 className="text-lg font-semibold text-gray-900 tracking-[-0.3px]" style={{ fontFeatureSettings: "'cv01', 'ss03'" }}>Inventario Completo</h2><p className="text-sm text-gray-500 mt-1">Busca, filtra y gestiona todos tus productos</p></div>
             <InventoryTable token={token} />
           </div>
         ) : activeTab === 'analytics' ? (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="mb-6">
-              <h2 className="text-lg font-semibold text-gray-900 tracking-[-0.3px]" style={{ fontFeatureSettings: "'cv01', 'ss03'" }}>Analytics de Negocio</h2>
-              <p className="text-sm text-gray-500 mt-1">Revenue, tendencias, margenes y recomendaciones</p>
-            </div>
+            <div className="mb-6"><h2 className="text-lg font-semibold text-gray-900 tracking-[-0.3px]" style={{ fontFeatureSettings: "'cv01', 'ss03'" }}>Analytics de Negocio</h2><p className="text-sm text-gray-500 mt-1">Revenue, tendencias, margenes y recomendaciones</p></div>
             <AnalyticsPanel token={token} />
+          </div>
+        ) : activeTab === 'orders' ? (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="mb-6"><h2 className="text-lg font-semibold text-gray-900 tracking-[-0.3px]" style={{ fontFeatureSettings: "'cv01', 'ss03'" }}>Seguimiento de Pedidos</h2><p className="text-sm text-gray-500 mt-1">Centraliza tus pedidos, proveedores y rastreo</p></div>
+            <OrderTracker token={token} />
           </div>
         ) : (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="mb-6">
-              <h2 className="text-lg font-semibold text-gray-900 tracking-[-0.3px]" style={{ fontFeatureSettings: "'cv01', 'ss03'" }}>Seguimiento de Pedidos</h2>
-              <p className="text-sm text-gray-500 mt-1">Centraliza tus pedidos, proveedores y numeros de rastreo</p>
-            </div>
-            <OrderTracker token={token} />
+            <div className="mb-6"><h2 className="text-lg font-semibold text-gray-900 tracking-[-0.3px]" style={{ fontFeatureSettings: "'cv01', 'ss03'" }}>Armar Pedido</h2><p className="text-sm text-gray-500 mt-1">Genera ordenes de compra desde tu inventario</p></div>
+            <PurchaseOrderBuilder token={token} />
           </div>
         )}
       </main>

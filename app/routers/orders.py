@@ -82,3 +82,26 @@ def delete_order(order_id: int, service: OrderService = Depends(get_order_servic
     if not service.delete_order(order_id):
         raise HTTPException(status_code=404, detail="Pedido no encontrado")
     return {"status": "deleted"}
+
+
+class PORequest(BaseModel):
+    supplier: str
+    order_number: str = ""
+    notes: str = ""
+    items: list[dict]  # [{sku, name, quantity, unit, unit_price}]
+
+
+@router.post('/generate-pdf')
+def generate_po_pdf(data: PORequest, token: str = Query(...)):
+    """Genera PDF de orden de compra y lo retorna."""
+    from fastapi.responses import Response
+    from app.services.po_pdf import generate_po_pdf as gen_pdf
+    import base64
+
+    pdf_bytes = gen_pdf(
+        supplier=data.supplier,
+        items=data.items,
+        order_number=data.order_number,
+        notes=data.notes,
+    )
+    return {"pdf_base64": base64.b64encode(pdf_bytes).decode(), "filename": f"OC_{data.order_number or 'pedido'}.pdf"}
