@@ -209,7 +209,12 @@ async def get_movements(
     limit: int = Query(100, ge=1, le=500),
     inventory_service: InventoryService = Depends(get_inventory_service)
 ):
-    """Obtiene el historial de movimientos (últimos N)"""
+    """Historial de movimientos."""
+    cache_key = f"movements:{token}:{limit}"
+    cached = get_cache(cache_key, ttl=60)
+    if cached is not None:
+        return cached
+
     try:
         rows = inventory_service.history_sheet.get_all_values()
         if not rows or len(rows) < 2:
