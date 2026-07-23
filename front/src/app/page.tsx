@@ -6,6 +6,7 @@ import AlertsPanel from '@/components/AlertsPanel';
 import RecentMovements from '@/components/RecentMovements';
 import InventoryTable from '@/components/InventoryTable';
 import AnalyticsPanel from '@/components/AnalyticsPanel';
+import PwaInstallBanner from '@/components/PwaInstallBanner';
 
 type Tab = 'dashboard' | 'inventory' | 'analytics';
 
@@ -198,6 +199,8 @@ export default function Home() {
           </p>
         </div>
       </footer>
+
+      <PwaInstallBanner />
     </div>
   );
 }
