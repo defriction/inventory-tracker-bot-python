@@ -13,7 +13,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Inventario SaaS · Dashboard",
+  title: "Inventario Inteligente · Dashboard",
   description: "Dashboard de gestión de inventario para PyMEs colombianas",
 };
 

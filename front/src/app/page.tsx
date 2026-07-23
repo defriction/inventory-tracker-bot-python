@@ -32,10 +32,10 @@ export default function Home() {
 
             <div className="relative z-10">
               <div className="text-center mb-8">
-                <span className="text-4xl block mb-4">📦</span>
+                <span className="text-4xl block mb-4">🤖</span>
                 <h1 className="text-2xl font-semibold text-[#f7f8f8] tracking-[-0.5px] mb-2"
                   style={{ fontFeatureSettings: "'cv01', 'ss03'" }}>
-                  Inventario SaaS
+                  Inventario Inteligente
                 </h1>
                 <p className="text-sm text-[#8a8f98] leading-relaxed">
                   Gestiona tu inventario desde Telegram y monitorea todo desde aquí
@@ -90,7 +90,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-14">
             <div className="flex items-center gap-6">
-              <span className="text-xl">📦</span>
+              <span className="text-xl">🤖</span>
               <div className="flex gap-1">
                 <TabButton
                   active={activeTab === 'dashboard'}
