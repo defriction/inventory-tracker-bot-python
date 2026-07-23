@@ -34,7 +34,7 @@ export default function InventoryTable({ token }: { token: string }) {
         });
     };
     fetchData();
-    const interval = setInterval(fetchData, 30000);
+    const interval = setInterval(fetchData, 120000);
     return () => clearInterval(interval);
   }, [token]);
 
