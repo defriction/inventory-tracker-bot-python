@@ -5,8 +5,9 @@ import StatsCards from '@/components/StatsCards';
 import AlertsPanel from '@/components/AlertsPanel';
 import RecentMovements from '@/components/RecentMovements';
 import InventoryTable from '@/components/InventoryTable';
+import AnalyticsPanel from '@/components/AnalyticsPanel';
 
-type Tab = 'dashboard' | 'inventory';
+type Tab = 'dashboard' | 'inventory' | 'analytics';
 
 export default function Home() {
   const [token, setToken] = useState('');
@@ -124,6 +125,12 @@ export default function Home() {
                 >
                   Inventario
                 </TabButton>
+                <TabButton
+                  active={activeTab === 'analytics'}
+                  onClick={() => setActiveTab('analytics')}
+                >
+                  Analytics
+                </TabButton>
               </div>
             </div>
             <button
@@ -151,7 +158,7 @@ export default function Home() {
               </div>
             </div>
           </div>
-        ) : (
+        ) : activeTab === 'inventory' ? (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="mb-6">
               <h2 className="text-lg font-semibold text-gray-900 tracking-[-0.3px]"
@@ -163,6 +170,19 @@ export default function Home() {
               </p>
             </div>
             <InventoryTable token={token} />
+          </div>
+        ) : (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="mb-6">
+              <h2 className="text-lg font-semibold text-gray-900 tracking-[-0.3px]"
+                style={{ fontFeatureSettings: "'cv01', 'ss03'" }}>
+                Analytics de Negocio
+              </h2>
+              <p className="text-sm text-gray-500 mt-1">
+                Revenue, tendencias, margenes y recomendaciones
+              </p>
+            </div>
+            <AnalyticsPanel token={token} />
           </div>
         )}
       </main>

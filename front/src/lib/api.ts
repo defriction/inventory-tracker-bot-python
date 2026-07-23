@@ -1,4 +1,4 @@
-import { Product, InventoryResponse, Stats, AlertsResponse, MovementsResponse } from '@/types';
+import { Product, InventoryResponse, Stats, AlertsResponse, MovementsResponse, AnalyticsResponse } from '@/types';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
@@ -41,5 +41,13 @@ export async function getMovements(token: string, limit = 10): Promise<Movements
     cache: 'no-store',
   });
   if (!res.ok) throw new Error('Error cargando movimientos');
+  return res.json();
+}
+
+export async function getAnalytics(token: string): Promise<AnalyticsResponse> {
+  const res = await fetch(`${API_URL}/api/analytics?token=${token}`, {
+    cache: 'no-store',
+  });
+  if (!res.ok) throw new Error('Error cargando analitica');
   return res.json();
 }

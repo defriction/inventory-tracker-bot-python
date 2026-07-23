@@ -66,3 +66,56 @@ export interface MovementsResponse {
   movements: Movement[];
   total: number;
 }
+
+export interface TopSeller {
+  sku: string;
+  name: string;
+  units_sold: number;
+  revenue: number;
+}
+
+export interface CategoryBreakdown {
+  category: string;
+  revenue: number;
+}
+
+export interface SalesTrendPoint {
+  date: string;
+  revenue: number;
+}
+
+export interface AbcItem {
+  sku: string;
+  name: string;
+  revenue: number;
+  pct: number;
+  class: string;
+}
+
+export interface MarginItem {
+  sku: string;
+  name: string;
+  category: string;
+  cost: number;
+  price: number;
+  margin_pct: number;
+  stock: number;
+}
+
+export interface StockHealth {
+  out_of_stock: number;
+  low_stock: number;
+  expiring: number;
+}
+
+export interface AnalyticsResponse {
+  top_sellers: TopSeller[];
+  category_breakdown: CategoryBreakdown[];
+  sales_trend: SalesTrendPoint[];
+  abc_classification: AbcItem[];
+  margins: MarginItem[];
+  stock_health: StockHealth;
+  recommendations: string[];
+  total_revenue_90d: number;
+  total_units_sold_90d: number;
+}

@@ -320,6 +320,187 @@ async def get_alerts(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.get('/analytics')
+async def get_analytics(
+    token: str = Query(...),
+    inventory_service: InventoryService = Depends(get_inventory_service)
+):
+    """Analitica completa: revenue, top sellers, tendencias, ABC, salud de stock."""
+    try:
+        # Cargar datos
+        rows = inventory_service.inventory_sheet.get_all_values()
+        mov_rows = inventory_service.history_sheet.get_all_values()
+        today = datetime.date.today()
+
+        # --- INVENTARIO ---
+        products = []
+        for row in rows[1:]:
+            if len(row) < 8: continue
+            stock = int(row[4]) if len(row) > 4 and str(row[4]).isdigit() else 0
+            cost = float(row[6]) if len(row) > 6 and str(row[6]).replace('.','').replace('-','').isdigit() else 0
+            price = float(row[7]) if len(row) > 7 and str(row[7]).replace('.','').replace('-','').isdigit() else 0
+            products.append({
+                "sku": str(row[1]) if len(row) > 1 else "",
+                "name": str(row[2]) if len(row) > 2 else "",
+                "category": str(row[3]) if len(row) > 3 else "General",
+                "stock": stock,
+                "cost": cost,
+                "price": price,
+                "expiration_date": str(row[8]) if len(row) > 8 else "",
+                "unit": str(row[5]) if len(row) > 5 else "UND",
+            })
+
+        # --- MOVIMIENTOS (ultimos 90 dias) ---
+        cutoff = today - datetime.timedelta(days=90)
+        movements = []
+        for row in mov_rows[1:]:
+            if len(row) < 7: continue
+            ts_str = str(row[0])
+            try:
+                ts = datetime.datetime.strptime(ts_str[:10], "%Y-%m-%d").date()
+            except:
+                continue
+            if ts < cutoff: continue
+            movements.append({
+                "date": str(ts),
+                "type": str(row[2]),
+                "sku": str(row[3]),
+                "name": str(row[4]),
+                "qty": int(row[5]) if str(row[5]).replace('-','').isdigit() else 0,
+                "user": str(row[6]),
+            })
+
+        # --- REVENUE POR PRODUCTO ---
+        sales_by_product = {}
+        for m in movements:
+            if m["type"] != "VENTA": continue
+            sku = m["sku"]
+            if sku not in sales_by_product:
+                sales_by_product[sku] = {"name": m["name"], "units_sold": 0, "revenue": 0.0}
+            sales_by_product[sku]["units_sold"] += abs(m["qty"])
+            # Buscar precio del producto
+            prod = next((p for p in products if p["sku"] == sku), None)
+            price = prod["price"] if prod else 0
+            sales_by_product[sku]["revenue"] += abs(m["qty"]) * price
+
+        # --- TOP 10 VENDIDOS ---
+        top_sellers = sorted(
+            [{"sku": k, **v} for k, v in sales_by_product.items()],
+            key=lambda x: x["revenue"], reverse=True
+        )[:10]
+
+        # --- REVENUE POR CATEGORIA ---
+        revenue_by_category = {}
+        for m in movements:
+            if m["type"] != "VENTA": continue
+            prod = next((p for p in products if p["sku"] == m["sku"]), None)
+            cat = prod["category"] if prod else "General"
+            price = prod["price"] if prod else 0
+            if cat not in revenue_by_category:
+                revenue_by_category[cat] = 0.0
+            revenue_by_category[cat] += abs(m["qty"]) * price
+
+        category_breakdown = sorted(
+            [{"category": k, "revenue": round(v, 2)} for k, v in revenue_by_category.items()],
+            key=lambda x: x["revenue"], reverse=True
+        )
+
+        # --- TENDENCIA DE VENTAS (ultimos 30 dias, diario) ---
+        daily_sales = {}
+        for i in range(30):
+            d = (today - datetime.timedelta(days=29-i)).strftime("%Y-%m-%d")
+            daily_sales[d] = 0.0
+
+        for m in movements:
+            if m["type"] != "VENTA": continue
+            d = m["date"]
+            if d in daily_sales:
+                prod = next((p for p in products if p["sku"] == m["sku"]), None)
+                price = prod["price"] if prod else 0
+                daily_sales[d] += abs(m["qty"]) * price
+
+        sales_trend = [{"date": k, "revenue": round(v, 2)} for k, v in daily_sales.items()]
+
+        # --- ABC CLASSIFICATION ---
+        total_revenue = sum(v["revenue"] for v in sales_by_product.values()) or 1
+        abc_items = sorted(
+            [{"sku": k, "name": v["name"], "revenue": v["revenue"],
+              "pct": round(v["revenue"] / total_revenue * 100, 1)}
+             for k, v in sales_by_product.items()],
+            key=lambda x: x["revenue"], reverse=True
+        )
+        running = 0
+        for item in abc_items:
+            running += item["pct"]
+            if running <= 70: item["class"] = "A"
+            elif running <= 90: item["class"] = "B"
+            else: item["class"] = "C"
+
+        # --- MARGENES ---
+        margins = []
+        for p in products:
+            if p["price"] > 0:
+                margin_pct = round((p["price"] - p["cost"]) / p["price"] * 100, 1) if p["price"] > 0 else 0
+                margins.append({
+                    "sku": p["sku"], "name": p["name"], "category": p["category"],
+                    "cost": p["cost"], "price": p["price"], "margin_pct": margin_pct,
+                    "stock": p["stock"]
+                })
+
+        # --- STOCK HEALTH ---
+        expiring_list = []
+        for p in products:
+            if p["expiration_date"]:
+                try:
+                    exp_d = datetime.datetime.strptime(p["expiration_date"], "%Y-%m-%d").date()
+                    days = (exp_d - today).days
+                    if days <= 30:
+                        expiring_list.append({"sku": p["sku"], "name": p["name"], "days_left": days})
+                except: pass
+
+        out_of_stock = [p for p in products if p["stock"] <= 0]
+        low_stock = [p for p in products if 0 < p["stock"] <= 5]
+
+        # --- RECOMENDACIONES ---
+        recommendations = []
+        # Productos clase A con stock bajo
+        a_low = [i for i in abc_items if i["class"] == "A" and any(
+            p["sku"] == i["sku"] and p["stock"] <= 5 for p in products)]
+        if a_low:
+            recommendations.append(f"⚠️ {len(a_low)} productos clase A (alta rentabilidad) tienen stock bajo. Prioriza reabastecerlos.")
+        # Productos sin ventas en 30 dias con stock alto
+        stale = [p for p in products if p["stock"] > 10 and p["sku"] not in sales_by_product]
+        if stale:
+            recommendations.append(f"📦 {len(stale)} productos con stock alto no han tenido ventas en 90 dias. Considera promociones.")
+        # Vencidos
+        expired = [e for e in expiring_list if e["days_left"] <= 0]
+        if expired:
+            recommendations.append(f"🚨 {len(expired)} productos vencidos. Retiralos del inventario.")
+        # Margenes negativos
+        negative_margins = [m for m in margins if m["margin_pct"] < 0]
+        if negative_margins:
+            recommendations.append(f"📉 {len(negative_margins)} productos se venden a perdida. Revisa sus precios.")
+
+        return {
+            "top_sellers": top_sellers,
+            "category_breakdown": category_breakdown,
+            "sales_trend": sales_trend,
+            "abc_classification": abc_items,
+            "margins": sorted(margins, key=lambda x: x["margin_pct"], reverse=True),
+            "stock_health": {
+                "out_of_stock": len(out_of_stock),
+                "low_stock": len(low_stock),
+                "expiring": len(expiring_list),
+            },
+            "recommendations": recommendations,
+            "total_revenue_90d": round(total_revenue, 2),
+            "total_units_sold_90d": sum(v["units_sold"] for v in sales_by_product.values()),
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get('/health')
 async def health_check():
     """Health check para el frontend"""
