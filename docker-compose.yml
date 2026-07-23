@@ -34,6 +34,14 @@ services:
       - "traefik.http.routers.inventory-admin.tls=true"
       - "traefik.http.routers.inventory-admin.tls.certresolver=mytlschallenge"
       
+      # --- LEGADO: Webhook Telegram (URL vieja, para transición) ---
+      - "traefik.http.routers.inventory-webhook-legacy.rule=Host(`n8n.srv1153123.hstgr.cloud`) && PathPrefix(`/inventory/webhook`)"
+      - "traefik.http.routers.inventory-webhook-legacy.entrypoints=websecure"
+      - "traefik.http.routers.inventory-webhook-legacy.tls=true"
+      - "traefik.http.routers.inventory-webhook-legacy.tls.certresolver=mytlschallenge"
+      - "traefik.http.middlewares.inventory-webhook-legacy-strip.stripprefix.prefixes=/inventory"
+      - "traefik.http.routers.inventory-webhook-legacy.middlewares=inventory-webhook-legacy-strip@docker"
+      
       - "traefik.docker.network=proxy"
 
   # 🎨 DASHBOARD FRONTEND (Next.js)
