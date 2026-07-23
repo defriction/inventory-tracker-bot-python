@@ -1,10 +1,8 @@
-from fastapi import APIRouter, HTTPException, Query, Depends, Header
+from fastapi import APIRouter, HTTPException, Query, Depends
 from pydantic import BaseModel
 from typing import Optional
-from app.services.tenant_service import TenantService
 from app.services.usage_tracker import UsageTracker
-from app.core.cache import get_cache, set_cache
-from app.core.auth import get_tenant_id_from_jwt
+from app.core.auth import get_current_tenant
 
 router = APIRouter(prefix='/api/usage', tags=['Analytics de Uso'])
 
@@ -16,46 +14,8 @@ class TrackEvent(BaseModel):
     metadata: Optional[dict] = None
 
 
-def get_tracker(
-    token: str = Query(None),
-    authorization: str = Header(None),
-):
-    # JWT path — no Google Sheets call needed
-    if authorization and authorization.startswith("Bearer "):
-        jwt_token = authorization.replace("Bearer ", "")
-        tenant_id = get_tenant_id_from_jwt(jwt_token)
-        if tenant_id:
-            return UsageTracker(tenant_id=tenant_id)
-
-    # Fallback: query param token + Google Sheets lookup
-    if not token:
-        raise HTTPException(status_code=401, detail="Token requerido")
-
-    cache_key = f"tenant_lookup:{token}"
-
-    # Cache hit — skip Google Sheets entirely
-    cached = get_cache(cache_key, ttl=300)
-    if cached and cached.get("tenant_id"):
-        return UsageTracker(tenant_id=cached["tenant_id"])
-
-    try:
-        tenant_service = TenantService()
-        cell = tenant_service.admin_sheet.find(token)
-        if not cell:
-            raise HTTPException(status_code=401, detail="Token invalido")
-        row = tenant_service.admin_sheet.row_values(cell.row)
-        tenant_id = row[1]
-
-        # Cache for 5 minutes
-        set_cache(cache_key, {"tenant_id": tenant_id}, ttl=300)
-
-        return UsageTracker(tenant_id=tenant_id)
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger = __import__('logging').getLogger(__name__)
-        logger.error(f"Error buscando token en Google Sheets: {e}")
-        raise HTTPException(status_code=503, detail="Servicio temporalmente no disponible")
+def get_tracker(tenant: dict = Depends(get_current_tenant)):
+    return UsageTracker(tenant_id=tenant['tenant_id'])
 
 
 @router.post('/track')

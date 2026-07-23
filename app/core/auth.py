@@ -3,9 +3,14 @@ JWT authentication — encode/decode tokens for session management.
 Eliminates Google Sheets lookup on every API request.
 """
 import jwt
+import logging
 from datetime import datetime, timedelta, timezone
 from typing import Optional
+from fastapi import Header, Query, HTTPException
 from app.core.config import settings
+from app.core.cache import get_cache, set_cache
+
+logger = logging.getLogger(__name__)
 
 
 def create_token(tenant_id: str, original_token: str) -> str:
@@ -33,3 +38,71 @@ def get_tenant_id_from_jwt(token: str) -> Optional[str]:
     if payload:
         return payload.get("sub")
     return None
+
+
+async def get_current_tenant(
+    authorization: str = Header(None),
+    token: str = Query(None),
+) -> dict:
+    """
+    Shared dependency for all protected endpoints.
+    Tries JWT (Authorization header) first, falls back to ?token= query param.
+
+    Returns: {"tenant_id", "token", "pyme_name", "sheet_id"}
+    """
+    original_token = None
+    tenant_id = None
+
+    # Path 1: JWT from Authorization header — no Google Sheets call needed for tenant_id
+    if authorization and authorization.startswith("Bearer "):
+        jwt_token = authorization.replace("Bearer ", "")
+        payload = decode_token(jwt_token)
+        if payload:
+            original_token = payload.get("token")
+            tenant_id = payload.get("sub")
+
+    # Path 2: query param token (fallback)
+    if not tenant_id and token:
+        original_token = token
+
+    if not original_token:
+        raise HTTPException(status_code=401, detail="Autenticacion requerida (JWT o token)")
+
+    # Look up sheet_id + pyme_name from cache or Google Sheets
+    cache_key = f"tenant_info:{original_token}"
+
+    cached = get_cache(cache_key, ttl=300)
+    if cached and cached.get("sheet_id"):
+        if not tenant_id:
+            tenant_id = cached.get("tenant_id")
+        return {
+            "tenant_id": tenant_id,
+            "token": original_token,
+            "pyme_name": cached.get("pyme_name", ""),
+            "sheet_id": cached["sheet_id"],
+        }
+
+    # Cache miss — hit Google Sheets
+    try:
+        from app.services.tenant_service import TenantService
+        tenant_service = TenantService()
+        cell = tenant_service.admin_sheet.find(original_token)
+        if not cell:
+            raise HTTPException(status_code=401, detail="Token invalido")
+        row = tenant_service.admin_sheet.row_values(cell.row)
+
+        tenant_id = tenant_id or row[1]
+        info = {
+            "tenant_id": tenant_id,
+            "token": original_token,
+            "pyme_name": row[2],
+            "sheet_id": row[3],
+        }
+        set_cache(cache_key, info, ttl=300)
+        return info
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error buscando tenant en Google Sheets: {e}")
+        raise HTTPException(status_code=503, detail="Servicio temporalmente no disponible")

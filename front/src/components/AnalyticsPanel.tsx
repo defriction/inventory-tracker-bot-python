@@ -10,14 +10,14 @@ import { getAnalytics } from '@/lib/api';
 
 const COLORS = ['#4f46e5', '#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316', '#6366f1'];
 
-export default function AnalyticsPanel({ token }: { token: string }) {
+export default function AnalyticsPanel({ token, jwt }: { token: string; jwt?: string }) {
   const [data, setData] = useState<AnalyticsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
     const fetchData = () => {
-      getAnalytics(token)
+      getAnalytics(token, jwt)
         .then(setData)
         .catch((err) => setError(err.message))
         .finally(() => setLoading(false));
@@ -25,7 +25,7 @@ export default function AnalyticsPanel({ token }: { token: string }) {
     fetchData();
     const interval = setInterval(fetchData, 60000);
     return () => clearInterval(interval);
-  }, [token]);
+  }, [token, jwt]);
 
   if (loading) {
     return (

@@ -2,11 +2,11 @@ from fastapi import APIRouter, HTTPException, Query, Depends
 from pydantic import BaseModel
 from typing import Optional, List
 import datetime
-from app.services.tenant_service import TenantService
 from app.services.inventory_service import InventoryService
 from app.services.analytics_service import AnalyticsService
 from app.core.config import settings
 from app.core.cache import get_cache, set_cache
+from app.core.auth import get_current_tenant
 
 router = APIRouter(
     prefix='/api',
@@ -57,24 +57,7 @@ class MovementSchema(BaseModel):
 
 # --- Dependencies ---
 
-def get_tenant(token: str = Query(..., description="Token de invitación de la pyme")):
-    """Valida el token y retorna el tenant"""
-    tenant_service = TenantService()
-    # Buscamos por token en la columna E (5)
-    try:
-        cell = tenant_service.admin_sheet.find(token)
-        if not cell:
-            raise HTTPException(status_code=401, detail="Token inválido")
-        row = tenant_service.admin_sheet.row_values(cell.row)
-        return {
-            "pyme_name": row[2],
-            "sheet_id": row[3],
-            "token": row[4]
-        }
-    except Exception as e:
-        raise HTTPException(status_code=401, detail=f"Error validando token: {str(e)}")
-
-def get_inventory_service(tenant: dict = Depends(get_tenant)):
+def get_inventory_service(tenant: dict = Depends(get_current_tenant)):
     """Retorna InventoryService conectado al sheet del tenant"""
     return InventoryService(sheet_id=tenant['sheet_id'])
 

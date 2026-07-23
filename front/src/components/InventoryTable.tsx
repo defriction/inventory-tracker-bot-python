@@ -9,7 +9,7 @@ const ITEMS_PER_PAGE = 10;
 type SortField = 'name' | 'stock' | 'price' | 'category' | 'expiration_date';
 type SortDir = 'asc' | 'desc';
 
-export default function InventoryTable({ token }: { token: string }) {
+export default function InventoryTable({ token, jwt }: { token: string; jwt?: string }) {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -23,7 +23,7 @@ export default function InventoryTable({ token }: { token: string }) {
 
   useEffect(() => {
     const fetchData = () => {
-      getInventory(token)
+      getInventory(token, jwt)
         .then((data) => {
           setProducts(data.products);
           setLoading(false);
@@ -36,7 +36,7 @@ export default function InventoryTable({ token }: { token: string }) {
     fetchData();
     const interval = setInterval(fetchData, 60000);
     return () => clearInterval(interval);
-  }, [token]);
+  }, [token, jwt]);
 
   // Extraer categorias unicas
   const categories = useMemo(() => {

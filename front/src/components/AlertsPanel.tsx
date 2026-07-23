@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { AlertsResponse } from '@/types';
 import { getAlerts } from '@/lib/api';
 
-export default function AlertsPanel({ token }: { token: string }) {
+export default function AlertsPanel({ token, jwt }: { token: string; jwt?: string }) {
   const [alerts, setAlerts] = useState<AlertsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState<'low_stock' | 'expiring' | null>(null);
@@ -13,7 +13,7 @@ export default function AlertsPanel({ token }: { token: string }) {
 
   useEffect(() => {
     const fetchData = () => {
-      getAlerts(token)
+      getAlerts(token, jwt)
         .then(setAlerts)
         .catch(() => {})
         .finally(() => setLoading(false));
@@ -21,7 +21,7 @@ export default function AlertsPanel({ token }: { token: string }) {
     fetchData();
     const interval = setInterval(fetchData, 60000);
     return () => clearInterval(interval);
-  }, [token]);
+  }, [token, jwt]);
 
   if (loading) {
     return (

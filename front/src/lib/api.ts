@@ -2,51 +2,62 @@ import { Product, InventoryResponse, Stats, AlertsResponse, MovementsResponse, A
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
-export async function getInventory(tenantToken: string): Promise<InventoryResponse> {
+function authHeaders(jwt?: string, extra?: Record<string, string>): Record<string, string> {
+  const headers: Record<string, string> = { ...extra };
+  if (jwt) headers['Authorization'] = `Bearer ${jwt}`;
+  return headers;
+}
+
+export async function getInventory(tenantToken: string, jwt?: string): Promise<InventoryResponse> {
   const res = await fetch(`${API_URL}/api/inventory?token=${tenantToken}`, {
     cache: 'no-store',
+    headers: authHeaders(jwt),
   });
   if (!res.ok) throw new Error('Error cargando inventario');
   return res.json();
 }
 
-export async function updateProduct(token: string, product: Partial<Product>): Promise<Product> {
+export async function updateProduct(token: string, product: Partial<Product>, jwt?: string): Promise<Product> {
   const res = await fetch(`${API_URL}/api/products/${product.sku}?token=${token}`, {
     method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders(jwt, { 'Content-Type': 'application/json' }),
     body: JSON.stringify(product),
   });
   if (!res.ok) throw new Error('Error actualizando producto');
   return res.json();
 }
 
-export async function getStats(token: string): Promise<Stats> {
+export async function getStats(token: string, jwt?: string): Promise<Stats> {
   const res = await fetch(`${API_URL}/api/stats?token=${token}`, {
     cache: 'no-store',
+    headers: authHeaders(jwt),
   });
   if (!res.ok) throw new Error('Error cargando estadisticas');
   return res.json();
 }
 
-export async function getAlerts(token: string): Promise<AlertsResponse> {
+export async function getAlerts(token: string, jwt?: string): Promise<AlertsResponse> {
   const res = await fetch(`${API_URL}/api/alerts?token=${token}`, {
     cache: 'no-store',
+    headers: authHeaders(jwt),
   });
   if (!res.ok) throw new Error('Error cargando alertas');
   return res.json();
 }
 
-export async function getMovements(token: string, limit = 10): Promise<MovementsResponse> {
+export async function getMovements(token: string, limit = 10, jwt?: string): Promise<MovementsResponse> {
   const res = await fetch(`${API_URL}/api/movements?token=${token}&limit=${limit}`, {
     cache: 'no-store',
+    headers: authHeaders(jwt),
   });
   if (!res.ok) throw new Error('Error cargando movimientos');
   return res.json();
 }
 
-export async function getAnalytics(token: string): Promise<AnalyticsResponse> {
+export async function getAnalytics(token: string, jwt?: string): Promise<AnalyticsResponse> {
   const res = await fetch(`${API_URL}/api/analytics?token=${token}`, {
     cache: 'no-store',
+    headers: authHeaders(jwt),
   });
   if (!res.ok) throw new Error('Error cargando analitica');
   return res.json();

@@ -15,14 +15,16 @@ interface UsageStats {
   recent: { event: string; category: string; tab: string; created_at: string }[];
 }
 
-export default function UsageStats({ token }: { token: string }) {
+export default function UsageStats({ token, jwt }: { token: string; jwt?: string }) {
   const [stats, setStats] = useState<UsageStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [days, setDays] = useState(30);
 
   const fetchStats = () => {
     const endpoint = token === '3HF784F' ? `${API_URL}/api/usage/admin-stats?days=${days}` : `${API_URL}/api/usage/stats?token=${token}&days=${days}`;
-    fetch(endpoint)
+    const headers: Record<string, string> = {};
+    if (jwt) headers['Authorization'] = `Bearer ${jwt}`;
+    fetch(endpoint, { headers })
       .then(r => r.json())
       .then(setStats)
       .finally(() => setLoading(false));

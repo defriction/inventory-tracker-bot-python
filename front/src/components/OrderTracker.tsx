@@ -17,7 +17,7 @@ const STATUS_COLORS: Record<string, string> = {
   cancelado: 'bg-red-100 text-red-700 border-red-200',
 };
 
-export default function OrderTracker({ token }: { token: string }) {
+export default function OrderTracker({ token, jwt }: { token: string; jwt?: string }) {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -27,11 +27,17 @@ export default function OrderTracker({ token }: { token: string }) {
   const [stats, setStats] = useState<Record<string, number>>({});
   const [form, setForm] = useState({ order_number: '', supplier: '', product_name: '', quantity: 1, tracking_number: '', shipping_company: '', tracking_url: '', status: 'pendiente', notes: '' });
 
+  const headers = (extra?: Record<string, string>) => {
+    const h: Record<string, string> = { ...extra };
+    if (jwt) h['Authorization'] = `Bearer ${jwt}`;
+    return h;
+  };
+
   const fetchOrders = () => {
     const params = new URLSearchParams({ limit: '50' });
     if (statusFilter) params.set('status', statusFilter);
     if (search) params.set('search', search);
-    fetch(`${API_URL}/api/orders?token=${token}&${params}`)
+    fetch(`${API_URL}/api/orders?token=${token}&${params}`, { headers: headers() })
       .then(r => r.json())
       .then((d: OrdersResponse) => { setOrders(d.orders); setStats(d.stats.by_status || {}); })
       .catch(() => {})
@@ -43,19 +49,19 @@ export default function OrderTracker({ token }: { token: string }) {
   const saveOrder = async () => {
     const url = editing ? `${API_URL}/api/orders/${editing.id}?token=${token}` : `${API_URL}/api/orders?token=${token}`;
     const method = editing ? 'PATCH' : 'POST';
-    await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) });
+    await fetch(url, { method, headers: headers({ 'Content-Type': 'application/json' }), body: JSON.stringify(form) });
     setShowForm(false); setEditing(null); setForm({ order_number: '', supplier: '', product_name: '', quantity: 1, tracking_number: '', shipping_company: '', tracking_url: '', status: 'pendiente', notes: '' });
     fetchOrders();
   };
 
   const deleteOrder = async (id: number) => {
     if (!confirm('Eliminar este pedido?')) return;
-    await fetch(`${API_URL}/api/orders/${id}?token=${token}`, { method: 'DELETE' });
+    await fetch(`${API_URL}/api/orders/${id}?token=${token}`, { method: 'DELETE', headers: headers() });
     fetchOrders();
   };
 
   const updateStatus = async (order: Order, newStatus: string) => {
-    await fetch(`${API_URL}/api/orders/${order.id}?token=${token}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: newStatus }) });
+    await fetch(`${API_URL}/api/orders/${order.id}?token=${token}`, { method: 'PATCH', headers: headers({ 'Content-Type': 'application/json' }), body: JSON.stringify({ status: newStatus }) });
     fetchOrders();
   };
 

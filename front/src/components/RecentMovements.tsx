@@ -18,13 +18,13 @@ const TYPE_COLORS: Record<string, string> = {
   AJUSTE: 'text-amber-700 bg-amber-100',
 };
 
-export default function RecentMovements({ token }: { token: string }) {
+export default function RecentMovements({ token, jwt }: { token: string; jwt?: string }) {
   const [movements, setMovements] = useState<Movement[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = () => {
-      getMovements(token, 10)
+      getMovements(token, 10, jwt)
         .then((data) => setMovements(data.movements))
         .catch(() => {})
         .finally(() => setLoading(false));
@@ -32,7 +32,7 @@ export default function RecentMovements({ token }: { token: string }) {
     fetchData();
     const interval = setInterval(fetchData, 60000);
     return () => clearInterval(interval);
-  }, [token]);
+  }, [token, jwt]);
 
   return (
     <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">

@@ -1,8 +1,8 @@
 from fastapi import APIRouter, HTTPException, Query, Depends
 from pydantic import BaseModel
 from typing import Optional
-from app.services.tenant_service import TenantService
 from app.services.order_service import OrderService
+from app.core.auth import get_current_tenant
 
 router = APIRouter(
     prefix='/api/orders',
@@ -34,14 +34,8 @@ class OrderUpdate(BaseModel):
     notes: Optional[str] = None
 
 
-def get_order_service(token: str = Query(..., description="Token de la pyme")):
-    tenant_service = TenantService()
-    cell = tenant_service.admin_sheet.find(token)
-    if not cell:
-        raise HTTPException(status_code=401, detail="Token invalido")
-    row = tenant_service.admin_sheet.row_values(cell.row)
-    tenant_id = row[1]  # UUID de la pyme
-    return OrderService(tenant_id=tenant_id)
+def get_order_service(tenant: dict = Depends(get_current_tenant)):
+    return OrderService(tenant_id=tenant['tenant_id'])
 
 
 @router.get('')

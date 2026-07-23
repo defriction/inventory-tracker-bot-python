@@ -16,7 +16,7 @@ interface POItem {
   current_stock: number;
 }
 
-export default function PurchaseOrderBuilder({ token }: { token: string }) {
+export default function PurchaseOrderBuilder({ token, jwt }: { token: string; jwt?: string }) {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -29,10 +29,10 @@ export default function PurchaseOrderBuilder({ token }: { token: string }) {
   const [receiveMsg, setReceiveMsg] = useState('');
 
   const refreshInventory = () => {
-    getInventory(token).then(d => setProducts(d.products)).finally(() => setLoading(false));
+    getInventory(token, jwt).then(d => setProducts(d.products)).finally(() => setLoading(false));
   };
 
-  useEffect(() => { refreshInventory(); }, [token]);
+  useEffect(() => { refreshInventory(); }, [token, jwt]);
 
   const suggestQty = (stock: number): number => {
     if (stock <= 0) return 10;
@@ -63,7 +63,7 @@ export default function PurchaseOrderBuilder({ token }: { token: string }) {
     setGenerating(true);
     try {
       const res = await fetch(`${API_URL}/api/orders/generate-pdf?token=${token}`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        method: 'POST', headers: { ...(jwt ? { Authorization: `Bearer ${jwt}` } : {}), 'Content-Type': 'application/json' },
         body: JSON.stringify({ supplier, order_number: orderNumber, notes, items: selected.map(s => ({ sku: s.sku, name: s.name, quantity: s.quantity, unit: s.unit, unit_price: s.unit_price })) }),
       });
       const data = await res.json();
@@ -80,7 +80,7 @@ export default function PurchaseOrderBuilder({ token }: { token: string }) {
     setReceiving(true); setReceiveMsg('');
     try {
       const res = await fetch(`${API_URL}/api/receive-order?token=${token}`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        method: 'POST', headers: { ...(jwt ? { Authorization: `Bearer ${jwt}` } : {}), 'Content-Type': 'application/json' },
         body: JSON.stringify({ items: selected.map(s => ({ sku: s.sku, name: s.name, quantity: s.quantity })), user_name: 'Recepcion' }),
       });
       const data = await res.json();

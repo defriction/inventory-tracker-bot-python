@@ -176,29 +176,29 @@ export default function Home() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className={activeTab === 'dashboard' ? '' : 'hidden'}>
           <div className="space-y-6">
-            <StatsCards token={token} />
+            <StatsCards token={token} jwt={jwt} />
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2"><RecentMovements token={token} /></div>
+              <div className="lg:col-span-2"><RecentMovements token={token} jwt={jwt} /></div>
               <div className="lg:col-span-1 space-y-4">
-                <AlertsPanel token={token} />
+                <AlertsPanel token={token} jwt={jwt} />
               </div>
             </div>
           </div>
         </div>
         <div className={activeTab === 'inventory' ? '' : 'hidden'}>
-          <InventoryTable token={token} />
+          <InventoryTable token={token} jwt={jwt} />
         </div>
         <div className={activeTab === 'analytics' ? '' : 'hidden'}>
-          <AnalyticsPanel token={token} />
+          <AnalyticsPanel token={token} jwt={jwt} />
         </div>
         <div className={activeTab === 'orders' ? '' : 'hidden'}>
-          <OrderTracker token={token} />
+          <OrderTracker token={token} jwt={jwt} />
         </div>
         <div className={activeTab === 'po_builder' ? '' : 'hidden'}>
-          <PurchaseOrderBuilder token={token} />
+          <PurchaseOrderBuilder token={token} jwt={jwt} />
         </div>
         <div className={activeTab === 'usage' ? '' : 'hidden'}>
-          <UsageStats token={token} />
+          <UsageStats token={token} jwt={jwt} />
         </div>
       </main>
     </div>

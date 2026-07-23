@@ -5,16 +5,16 @@ import { Package, DollarSign, AlertTriangle, CalendarClock } from 'lucide-react'
 import { Stats } from '@/types';
 import { getStats } from '@/lib/api';
 
-export default function StatsCards({ token }: { token: string }) {
+export default function StatsCards({ token, jwt }: { token: string; jwt?: string }) {
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchData = () => { getStats(token).then(setStats).catch(() => {}).finally(() => setLoading(false)); };
+    const fetchData = () => { getStats(token, jwt).then(setStats).catch(() => {}).finally(() => setLoading(false)); };
     fetchData();
     const interval = setInterval(fetchData, 60000);
     return () => clearInterval(interval);
-  }, [token]);
+  }, [token, jwt]);
 
   const cards = [
     { label: 'Total Productos', value: stats?.total_products ?? '—', icon: Package, color: 'indigo' },
