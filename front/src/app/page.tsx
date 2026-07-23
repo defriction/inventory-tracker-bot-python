@@ -22,29 +22,27 @@ export default function Home() {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#08090a]">
-        {/* Login glass card */}
+      <div className="min-h-screen flex items-center justify-center bg-[#f7f8f8]">
         <div className="w-full max-w-md mx-4">
-          <div className="relative rounded-2xl border border-white/[0.08] bg-white/[0.02] backdrop-blur-2xl p-8 shadow-2xl">
-            {/* Glass highlight */}
-            <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/[0.03] rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl" />
-            <div className="absolute bottom-0 left-0 w-48 h-48 bg-violet-500/[0.03] rounded-full translate-y-1/2 -translate-x-1/2 blur-3xl" />
+          <div className="relative rounded-2xl border border-gray-200 bg-white/90 backdrop-blur-xl p-8 shadow-xl shadow-gray-200/50">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-100 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl" />
+            <div className="absolute bottom-0 left-0 w-48 h-48 bg-violet-100 rounded-full translate-y-1/2 -translate-x-1/2 blur-3xl" />
 
             <div className="relative z-10">
               <div className="text-center mb-8">
                 <span className="text-4xl block mb-4">🤖</span>
-                <h1 className="text-2xl font-semibold text-[#f7f8f8] tracking-[-0.5px] mb-2"
+                <h1 className="text-2xl font-semibold text-gray-900 tracking-[-0.5px] mb-2"
                   style={{ fontFeatureSettings: "'cv01', 'ss03'" }}>
                   Inventario Inteligente
                 </h1>
-                <p className="text-sm text-[#8a8f98] leading-relaxed">
-                  Gestiona tu inventario desde Telegram y monitorea todo desde aquí
+                <p className="text-sm text-gray-500 leading-relaxed">
+                  Gestiona tu inventario desde Telegram y monitorea todo desde aqui
                 </p>
               </div>
 
               <form onSubmit={handleLogin} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-medium text-[#8a8f98] mb-2 uppercase tracking-wider">
+                  <label className="block text-xs font-medium text-gray-500 mb-2 uppercase tracking-wider">
                     Token de Acceso
                   </label>
                   <input
@@ -52,9 +50,9 @@ export default function Home() {
                     value={token}
                     onChange={(e) => setToken(e.target.value.toUpperCase())}
                     placeholder="Ej: AB1234"
-                    className="w-full px-4 py-3 bg-white/[0.03] border border-white/[0.08] rounded-lg
-                      text-[#f7f8f8] placeholder-[#62666d] text-sm
-                      focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/20
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg
+                      text-gray-900 placeholder-gray-400 text-sm
+                      focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20
                       transition-all duration-200"
                     style={{ fontFeatureSettings: "'cv01', 'ss03'" }}
                   />
@@ -66,14 +64,14 @@ export default function Home() {
                   className="w-full py-3 px-4 rounded-lg text-sm font-medium
                     bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700
                     text-white disabled:opacity-40 disabled:cursor-not-allowed
-                    transition-all duration-200 shadow-lg shadow-indigo-500/10"
+                    transition-all duration-200 shadow-lg shadow-indigo-500/20"
                   style={{ fontFeatureSettings: "'cv01', 'ss03'" }}
                 >
                   Ingresar al Dashboard
                 </button>
               </form>
 
-              <p className="mt-6 text-xs text-center text-[#62666d] leading-relaxed">
+              <p className="mt-6 text-xs text-center text-gray-400 leading-relaxed">
                 Usa el mismo token que configuraste en Telegram
               </p>
             </div>
@@ -84,9 +82,9 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-[#08090a]">
+    <div className="min-h-screen bg-[#f7f8f8]">
       {/* Navigation */}
-      <nav className="sticky top-0 z-50 border-b border-white/[0.05] bg-[#08090a]/80 backdrop-blur-xl">
+      <nav className="sticky top-0 z-50 border-b border-gray-200 bg-white/80 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-14">
             <div className="flex items-center gap-6">
@@ -108,7 +106,7 @@ export default function Home() {
             </div>
             <button
               onClick={() => setIsAuthenticated(false)}
-              className="text-xs text-[#8a8f98] hover:text-[#d0d6e0] transition-colors px-3 py-1.5 rounded-md hover:bg-white/[0.04]"
+              className="text-xs text-gray-500 hover:text-gray-700 transition-colors px-3 py-1.5 rounded-md hover:bg-gray-100"
             >
               Salir
             </button>
@@ -134,11 +132,11 @@ export default function Home() {
         ) : (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="mb-6">
-              <h2 className="text-lg font-semibold text-[#f7f8f8] tracking-[-0.3px]"
+              <h2 className="text-lg font-semibold text-gray-900 tracking-[-0.3px]"
                 style={{ fontFeatureSettings: "'cv01', 'ss03'" }}>
                 Inventario Completo
               </h2>
-              <p className="text-sm text-[#8a8f98] mt-1">
+              <p className="text-sm text-gray-500 mt-1">
                 Busca, filtra y gestiona todos tus productos
               </p>
             </div>
@@ -148,11 +146,11 @@ export default function Home() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-white/[0.03] mt-16">
+      <footer className="border-t border-gray-100 mt-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <p className="text-xs text-center text-[#62666d]">
-            Inventory Bot SaaS · Gestiona desde{' '}
-            <a href="https://t.me/SmartInventoryBot" className="text-indigo-400 hover:text-indigo-300 transition-colors">
+          <p className="text-xs text-center text-gray-400">
+            Inventario Inteligente · Gestiona desde{' '}
+            <a href="https://t.me/SmartInventoryBot" className="text-indigo-600 hover:text-indigo-500 transition-colors">
               Telegram
             </a>
           </p>
@@ -176,8 +174,8 @@ function TabButton({
       onClick={onClick}
       className={`relative px-4 py-1.5 text-sm rounded-md transition-all duration-200 ${
         active
-          ? 'text-[#f7f8f8] bg-white/[0.06]'
-          : 'text-[#8a8f98] hover:text-[#d0d6e0] hover:bg-white/[0.03]'
+          ? 'text-gray-900 bg-gray-200/80'
+          : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
       }`}
       style={{ fontFeatureSettings: "'cv01', 'ss03'" }}
     >
