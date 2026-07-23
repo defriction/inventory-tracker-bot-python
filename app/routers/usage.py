@@ -1,9 +1,10 @@
-from fastapi import APIRouter, HTTPException, Query, Depends
+from fastapi import APIRouter, HTTPException, Query, Depends, Header
 from pydantic import BaseModel
 from typing import Optional
 from app.services.tenant_service import TenantService
 from app.services.usage_tracker import UsageTracker
 from app.core.cache import get_cache, set_cache
+from app.core.auth import get_tenant_id_from_jwt
 
 router = APIRouter(prefix='/api/usage', tags=['Analytics de Uso'])
 
@@ -15,7 +16,21 @@ class TrackEvent(BaseModel):
     metadata: Optional[dict] = None
 
 
-def get_tracker(token: str = Query(...)):
+def get_tracker(
+    token: str = Query(None),
+    authorization: str = Header(None),
+):
+    # JWT path — no Google Sheets call needed
+    if authorization and authorization.startswith("Bearer "):
+        jwt_token = authorization.replace("Bearer ", "")
+        tenant_id = get_tenant_id_from_jwt(jwt_token)
+        if tenant_id:
+            return UsageTracker(tenant_id=tenant_id)
+
+    # Fallback: query param token + Google Sheets lookup
+    if not token:
+        raise HTTPException(status_code=401, detail="Token requerido")
+
     cache_key = f"tenant_lookup:{token}"
 
     # Cache hit — skip Google Sheets entirely

@@ -11,6 +11,11 @@ class Settings(BaseSettings):
     TEMPLATE_SHEET_ID: str
     SAAS_FOLDER_ID: str   # <--- NUEVA VARIABLE IMPORTANTE
 
+    # --- JWT Auth ---
+    JWT_SECRET: str = "inventory-tracker-jwt-secret-change-me-in-env"
+    JWT_ALGORITHM: str = "HS256"
+    JWT_EXPIRE_DAYS: int = 7
+
     # --- WHATSAPP (Opcional) ---
     WHATSAPP_SERVER_URL: str = ""
     WHATSAPP_API_KEY: str = ""

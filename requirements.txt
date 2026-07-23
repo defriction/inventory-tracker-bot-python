@@ -12,3 +12,4 @@ scipy
 httpx
 redis
 reportlab
+PyJWT

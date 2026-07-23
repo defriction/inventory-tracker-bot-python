@@ -28,6 +28,7 @@ const navItems: { id: Tab; label: string; icon: any; adminOnly?: boolean }[] = [
 
 export default function Home() {
   const [token, setToken] = useState('');
+  const [jwt, setJwt] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [hydrated, setHydrated] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
@@ -40,8 +41,10 @@ export default function Home() {
   // Hydrate auth state from localStorage after mount (avoids React hydration mismatch #418)
   useEffect(() => {
     const storedToken = localStorage.getItem('inventory_token') || '';
+    const storedJwt = localStorage.getItem('inventory_jwt') || '';
     const storedAuth = localStorage.getItem('inventory_auth') === 'true';
     setToken(storedToken);
+    setJwt(storedJwt);
     setIsAuthenticated(storedAuth);
     setHydrated(true);
   }, []);
@@ -55,8 +58,11 @@ export default function Home() {
   useEffect(() => {
     if (!isAuthenticated) return;
     const labels: Record<string, string> = { dashboard: 'Dashboard', inventory: 'Inventario', analytics: 'Analytics', orders: 'Pedidos', po_builder: 'Armar Pedido' };
-    fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/usage/track?token=${token}`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (jwt) headers['Authorization'] = `Bearer ${jwt}`;
+    const query = jwt ? '' : `?token=${token}`;
+    fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/usage/track${query}`, {
+      method: 'POST', headers,
       body: JSON.stringify({ event: 'tab_view', category: 'navigation', tab: labels[activeTab] || activeTab }),
     }).catch(() => {});
   }, [activeTab, isAuthenticated]);
@@ -79,10 +85,21 @@ export default function Home() {
       return;
     }
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/stats?token=${t}`);
-      if (!res.ok) { const d = await res.json().catch(() => ({})); setError(d.detail || 'Token invalido'); return; }
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: t }),
+      });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        setError(d.detail || 'Token invalido');
+        return;
+      }
+      const data = await res.json();
+      setJwt(data.access_token);
       setIsAuthenticated(true);
       localStorage.setItem('inventory_token', t);
+      localStorage.setItem('inventory_jwt', data.access_token);
       localStorage.setItem('inventory_auth', 'true');
     } catch { setError('No se pudo conectar.'); }
     finally { setLoading(false); }
@@ -145,7 +162,7 @@ export default function Home() {
           <div className="relative flex items-center pl-2 ml-1 border-l border-gray-200/60">
             <span className="hidden sm:block text-[10px] text-gray-400 font-mono mr-2 bg-gray-100/80 px-1.5 py-0.5 rounded-md">{token.slice(0, 4)}</span>
             <button
-              onClick={() => { setIsAuthenticated(false); localStorage.removeItem('inventory_token'); localStorage.removeItem('inventory_auth'); }}
+              onClick={() => { setIsAuthenticated(false); setJwt(''); localStorage.removeItem('inventory_token'); localStorage.removeItem('inventory_jwt'); localStorage.removeItem('inventory_auth'); }}
               className="flex items-center gap-1 px-2 py-1.5 rounded-xl text-xs text-gray-400 hover:text-red-500 hover:bg-red-50/50 transition-all duration-200"
               title="Cerrar sesion"
             >
