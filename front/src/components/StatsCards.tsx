@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { Package, DollarSign, AlertTriangle, CalendarClock } from 'lucide-react';
 import { Stats } from '@/types';
 import { getStats } from '@/lib/api';
 
@@ -9,96 +10,45 @@ export default function StatsCards({ token }: { token: string }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchData = () => {
-      getStats(token)
-        .then(setStats)
-        .catch(() => {})
-        .finally(() => setLoading(false));
-    };
+    const fetchData = () => { getStats(token).then(setStats).catch(() => {}).finally(() => setLoading(false)); };
     fetchData();
     const interval = setInterval(fetchData, 120000);
     return () => clearInterval(interval);
   }, [token]);
 
   const cards = [
-    {
-      label: 'Total Productos',
-      value: stats?.total_products ?? '—',
-      icon: '📦',
-      color: 'from-indigo-50 to-indigo-100/50',
-      border: 'border-indigo-200',
-    },
-    {
-      label: 'Valor Inventario',
-      value: stats ? `$${stats.total_stock_value.toLocaleString()}` : '—',
-      icon: '💰',
-      color: 'from-emerald-50 to-emerald-100/50',
-      border: 'border-emerald-200',
-    },
-    {
-      label: 'Stock Bajo',
-      value: stats?.low_stock_count ?? '—',
-      icon: '⚠️',
-      color: stats && stats.low_stock_count > 0
-        ? 'from-amber-50 to-amber-100/50'
-        : 'from-gray-50 to-gray-100/50',
-      border: stats && stats.low_stock_count > 0
-        ? 'border-amber-300'
-        : 'border-gray-200',
-      pulse: stats && stats.low_stock_count > 0,
-    },
-    {
-      label: 'Por Vencer',
-      value: stats?.expiring_count ?? '—',
-      icon: '📅',
-      color: stats && stats.expiring_count > 0
-        ? 'from-red-50 to-red-100/50'
-        : 'from-gray-50 to-gray-100/50',
-      border: stats && stats.expiring_count > 0
-        ? 'border-red-300'
-        : 'border-gray-200',
-      pulse: stats && stats.expiring_count > 0,
-    },
+    { label: 'Total Productos', value: stats?.total_products ?? '—', icon: Package, color: 'indigo' },
+    { label: 'Valor Inventario', value: stats ? `$${stats.total_stock_value.toLocaleString()}` : '—', icon: DollarSign, color: 'emerald' },
+    { label: 'Stock Bajo', value: stats?.low_stock_count ?? '—', icon: AlertTriangle, color: stats && stats.low_stock_count > 0 ? 'amber' : 'gray' },
+    { label: 'Por Vencer', value: stats?.expiring_count ?? '—', icon: CalendarClock, color: stats && stats.expiring_count > 0 ? 'red' : 'gray' },
   ];
 
+  const colorMap: Record<string, { bg: string; icon: string; text: string }> = {
+    indigo: { bg: 'bg-indigo-50', icon: 'text-indigo-600', text: 'text-indigo-700' },
+    emerald: { bg: 'bg-emerald-50', icon: 'text-emerald-600', text: 'text-emerald-700' },
+    amber: { bg: 'bg-amber-50', icon: 'text-amber-600', text: 'text-amber-700' },
+    red: { bg: 'bg-red-50', icon: 'text-red-600', text: 'text-red-700' },
+    gray: { bg: 'bg-gray-50', icon: 'text-gray-400', text: 'text-gray-500' },
+  };
+
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-      {cards.map((card) => (
-        <div
-          key={card.label}
-          className={`
-            relative overflow-hidden rounded-xl border ${card.border}
-            bg-gradient-to-br ${card.color}
-            backdrop-blur-xl bg-white/80
-            p-5 transition-all duration-300
-            hover:shadow-md hover:scale-[1.02]
-          `}
-        >
-          <div className="relative z-10">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      {cards.map(card => {
+        const c = colorMap[card.color];
+        return (
+          <div key={card.label} className="bg-white rounded-2xl border border-gray-100 p-5 hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                {card.label}
-              </span>
-              <span className="text-xl">{card.icon}</span>
+              <div className={`w-10 h-10 rounded-xl ${c.bg} flex items-center justify-center`}>
+                <card.icon className={`w-5 h-5 ${c.icon}`} />
+              </div>
             </div>
-            <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-bold text-gray-900 tracking-[-0.5px]">
-                {loading ? (
-                  <span className="inline-block w-16 h-8 bg-gray-100 rounded animate-pulse" />
-                ) : (
-                  card.value
-                )}
-              </span>
-              {card.pulse && (
-                <span className="relative flex h-2.5 w-2.5">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500" />
-                </span>
-              )}
+            <div className="text-2xl font-bold text-gray-900 tracking-tight">
+              {loading ? <span className="inline-block w-16 h-7 bg-gray-100 rounded animate-pulse" /> : card.value}
             </div>
+            <p className="text-xs text-gray-400 mt-1 font-medium">{card.label}</p>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
