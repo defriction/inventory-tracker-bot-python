@@ -2,36 +2,16 @@ from fastapi import APIRouter, HTTPException, Query, Depends
 from pydantic import BaseModel
 from typing import Optional, List
 import datetime
-import time
 from app.services.tenant_service import TenantService
 from app.services.inventory_service import InventoryService
 from app.services.analytics_service import AnalyticsService
 from app.core.config import settings
+from app.core.cache import get_cache, set_cache
 
 router = APIRouter(
     prefix='/api',
     tags=['REST API para Frontend']
 )
-
-# Cache para evitar rate limits de Google Sheets (60 req/min/usuario)
-_cache: dict[str, tuple[float, any]] = {}
-CACHE_TTL = 60  # segundos
-
-
-def cached(key: str, ttl: int = CACHE_TTL):
-    """Simple in-memory cache decorator helper."""
-    def decorator(fn):
-        def wrapper(*args, **kwargs):
-            now = time.time()
-            if key in _cache:
-                ts, val = _cache[key]
-                if now - ts < ttl:
-                    return val
-            val = fn(*args, **kwargs)
-            _cache[key] = (now, val)
-            return val
-        return wrapper
-    return decorator
 
 # --- Schemas ---
 
@@ -99,17 +79,6 @@ def get_inventory_service(tenant: dict = Depends(get_tenant)):
     return InventoryService(sheet_id=tenant['sheet_id'])
 
 # --- Endpoints ---
-
-def _get_cache(key: str) -> Optional[any]:
-    """Retorna valor cacheado si no expiro."""
-    if key in _cache:
-        ts, val = _cache[key]
-        if time.time() - ts < CACHE_TTL:
-            return val
-    return None
-
-def _set_cache(key: str, val: any):
-    _cache[key] = (time.time(), val)
 
 
 @router.get('/inventory', response_model=InventoryResponse)
@@ -361,7 +330,7 @@ async def get_analytics(
 ):
     """Analitica completa."""
     cache_key = f"analytics:{token}"
-    cached = _get_cache(cache_key)
+    cached = get_cache(cache_key, ttl=60)
     if cached is not None:
         return cached
 
@@ -545,7 +514,7 @@ async def get_analytics(
             "advanced": AnalyticsService(products, movements).full_report(),
         }
 
-        _set_cache(cache_key, result)
+        set_cache(cache_key, result, ttl=60)
         return result
 
     except Exception as e:

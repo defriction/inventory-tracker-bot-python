@@ -1,6 +1,16 @@
 version: '3.8'
 
 services:
+  # 🔴 Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: inventory_redis
+    restart: always
+    networks:
+      - proxy
+    volumes:
+      - redis_data:/data
+
   # 📦 BOT + API (Python/FastAPI)
   inventory_bot:
     build: .
@@ -69,3 +79,6 @@ services:
 networks:
   proxy:
     external: true
+
+volumes:
+  redis_data:
