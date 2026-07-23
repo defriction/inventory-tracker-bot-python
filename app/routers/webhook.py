@@ -22,6 +22,9 @@ router = APIRouter(
 
 TELEGRAM_SAFE_TEXT_LIMIT = 3800
 
+# Estado pendiente para resolucion multi-match: {user_id: {action, intent, matches, query}}
+pending_resolution: dict[str, dict] = {}
+
 
 def escape_markdown_v2(text):
     """Escapa caracteres para MarkdownV2"""
@@ -142,14 +145,46 @@ async def process_telegram_update(data: dict):
 
         # Flujo B: usuario registrado (negocio activo)
 
+        inventory_service = InventoryService(sheet_id=tenant['sheet_id'])
+
+        # Verificar si el usuario esta resolviendo un multi-match pendiente
+        pending = pending_resolution.get(str(user_id))
+        if pending:
+            logger.info(f" Resolviendo multi-match pendiente: {pending['action']} | respuesta: {text}")
+            resolve_matches = inventory_service._find_products_by_keyword(text)
+            pending_skus = {m["sku"] for m in pending["matches"]}
+            hits = [m for m in resolve_matches if m["sku"] in pending_skus]
+
+            if len(hits) == 1:
+                # Ejecutar la accion original con el producto seleccionado
+                pending_resolution.pop(str(user_id), None)
+                intent = pending["intent"].copy()
+                intent["producto"] = hits[0]["name"]
+                response_text = inventory_service.process_instruction(intent, user_name)
+                await send_telegram_message(chat_id, response_text)
+                return
+            else:
+                # SKU no coincide o hay ambiguedad, re-mostrar opciones
+                if len(hits) == 0:
+                    prefix = f"❌ *{escape_markdown_v2(text)}* no coincide con las opciones\.\n\n"
+                else:
+                    prefix = ""
+                response_text = prefix + inventory_service._format_multi_match(pending["matches"], pending["action"], pending["query"])
+                await send_telegram_message(chat_id, response_text)
+                return
+
         # 3. Interpretar intencion con IA
         intent_json = interpret_intent(text)
 
         # 4. Ejecutar en su inventario especifico
-        inventory_service = InventoryService(sheet_id=tenant['sheet_id'])
         response_text = inventory_service.process_instruction(intent_json, user_name)
 
-        # 5. Responder
+        # 5. Si hay multi-match pendiente, guardarlo para el proximo mensaje
+        if inventory_service.pending_multi_match:
+            pending_resolution[str(user_id)] = inventory_service.pending_multi_match
+            logger.info(f" Multi-match pendiente guardado para user {user_id}: {inventory_service.pending_multi_match['action']}")
+
+        # 6. Responder
         await send_telegram_message(chat_id, response_text)
 
     except Exception as e:

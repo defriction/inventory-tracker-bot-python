@@ -29,6 +29,7 @@ class InventoryService:
         except Exception as e:
             logger.error(f"Error abriendo hoja {sheet_id}: {e}")
             raise ValueError("No se pudo acceder al inventario del cliente.")
+        self.pending_multi_match = None  # {action, intent, matches, query}
 
     def process_instruction(self, intent: dict, user_name: str) -> str:
         """
@@ -91,6 +92,12 @@ class InventoryService:
                 logger.info(f" Producto encontrado: '{real_name}' en fila {row_idx}")
             elif len(matches) > 1:
                 logger.info(f" Multiples matches ({len(matches)}) para '{product_name}'")
+                self.pending_multi_match = {
+                    "action": action,
+                    "intent": intent,
+                    "matches": matches,
+                    "query": product_name
+                }
                 return self._format_multi_match(matches, action, product_name)
             else:
                 row_idx = None
