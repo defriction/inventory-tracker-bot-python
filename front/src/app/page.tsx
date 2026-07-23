@@ -98,7 +98,7 @@ export default function Home() {
                 </div>
                 <div className="hidden sm:block">
                   <h1 className="text-sm font-bold text-gray-900 leading-tight">Inventario Inteligente</h1>
-                  <p className="text-[10px] text-gray-400 leading-tight">SaaS para PyMEs</p>
+                  <p className="text-[10px] text-gray-400 leading-tight">Haciendo crecer tu negocio</p>
                 </div>
               </div>
 
