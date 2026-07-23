@@ -155,7 +155,7 @@ export default function LoginPage({ onLogin, loading, error }: Props) {
 
               <p className="text-xs text-center text-gray-400 pt-1">
                 Usa el mismo token que configuraste en{' '}
-                <a href="https://t.me/SmartInventoryBot" className="text-indigo-600 font-medium hover:text-indigo-500 underline underline-offset-2" target="_blank" rel="noopener">
+                <a href="https://t.me/inventario_smart_bot" className="text-indigo-600 font-medium hover:text-indigo-500 underline underline-offset-2" target="_blank" rel="noopener">
                   Telegram
                 </a>
               </p>
