@@ -9,10 +9,15 @@ export default function AlertsPanel({ token }: { token: string }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getAlerts(token)
-      .then(setAlerts)
-      .catch(() => {})
-      .finally(() => setLoading(false));
+    const fetchData = () => {
+      getAlerts(token)
+        .then(setAlerts)
+        .catch(() => {})
+        .finally(() => setLoading(false));
+    };
+    fetchData();
+    const interval = setInterval(fetchData, 30000);
+    return () => clearInterval(interval);
   }, [token]);
 
   if (loading) {

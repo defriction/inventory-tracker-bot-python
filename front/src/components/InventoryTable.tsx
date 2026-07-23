@@ -11,15 +11,20 @@ export default function InventoryTable({ token }: { token: string }) {
   const [search, setSearch] = useState('');
 
   useEffect(() => {
-    getInventory(token)
-      .then((data) => {
-        setProducts(data.products);
-        setLoading(false);
-      })
-      .catch((err) => {
-        setError(err.message);
-        setLoading(false);
-      });
+    const fetchData = () => {
+      getInventory(token)
+        .then((data) => {
+          setProducts(data.products);
+          setLoading(false);
+        })
+        .catch((err) => {
+          setError(err.message);
+          setLoading(false);
+        });
+    };
+    fetchData();
+    const interval = setInterval(fetchData, 30000);
+    return () => clearInterval(interval);
   }, [token]);
 
   const filtered = products.filter(

@@ -23,10 +23,15 @@ export default function RecentMovements({ token }: { token: string }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getMovements(token, 10)
-      .then((data) => setMovements(data.movements))
-      .catch(() => {})
-      .finally(() => setLoading(false));
+    const fetchData = () => {
+      getMovements(token, 10)
+        .then((data) => setMovements(data.movements))
+        .catch(() => {})
+        .finally(() => setLoading(false));
+    };
+    fetchData();
+    const interval = setInterval(fetchData, 30000);
+    return () => clearInterval(interval);
   }, [token]);
 
   return (

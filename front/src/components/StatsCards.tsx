@@ -9,10 +9,15 @@ export default function StatsCards({ token }: { token: string }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getStats(token)
-      .then(setStats)
-      .catch(() => {})
-      .finally(() => setLoading(false));
+    const fetchData = () => {
+      getStats(token)
+        .then(setStats)
+        .catch(() => {})
+        .finally(() => setLoading(false));
+    };
+    fetchData();
+    const interval = setInterval(fetchData, 30000);
+    return () => clearInterval(interval);
   }, [token]);
 
   const cards = [
