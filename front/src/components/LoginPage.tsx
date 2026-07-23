@@ -33,6 +33,68 @@ export default function LoginPage({ onLogin, loading, error }: Props) {
         <div className="absolute inset-0 opacity-[0.03]"
           style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
 
+        {/* Inventory Illustration */}
+        <div className="relative z-10 flex-1 flex items-center justify-center py-8">
+          <svg viewBox="0 0 400 300" className="w-full max-w-xs lg:max-w-sm opacity-90" fill="none">
+            {/* Shelf */}
+            <rect x="40" y="200" width="320" height="8" rx="4" fill="white" opacity="0.2" />
+            <rect x="40" y="260" width="320" height="8" rx="4" fill="white" opacity="0.15" />
+
+            {/* Box 1 - large */}
+            <rect x="60" y="140" width="70" height="60" rx="8" fill="white" opacity="0.25" />
+            <rect x="60" y="140" width="70" height="60" rx="8" stroke="white" strokeWidth="1.5" strokeOpacity="0.3" />
+            <line x1="95" y1="140" x2="95" y2="200" stroke="white" strokeWidth="1" strokeOpacity="0.2" />
+            <line x1="60" y1="170" x2="130" y2="170" stroke="white" strokeWidth="1" strokeOpacity="0.2" />
+            <rect x="78" y="180" width="14" height="14" rx="3" fill="white" opacity="0.15" />
+
+            {/* Box 2 - medium */}
+            <rect x="145" y="155" width="55" height="45" rx="8" fill="white" opacity="0.2" />
+            <rect x="145" y="155" width="55" height="45" rx="8" stroke="white" strokeWidth="1.5" strokeOpacity="0.3" />
+            <line x1="172" y1="155" x2="172" y2="200" stroke="white" strokeWidth="1" strokeOpacity="0.2" />
+
+            {/* Box 3 - small stacked */}
+            <rect x="215" y="165" width="45" height="35" rx="6" fill="white" opacity="0.15" />
+            <rect x="215" y="165" width="45" height="35" rx="6" stroke="white" strokeWidth="1.5" strokeOpacity="0.25" />
+
+            {/* Box 4 - on top of box 1 */}
+            <rect x="100" y="115" width="40" height="25" rx="6" fill="white" opacity="0.18" />
+            <rect x="100" y="115" width="40" height="25" rx="6" stroke="white" strokeWidth="1" strokeOpacity="0.2" />
+
+            {/* Boxes on bottom shelf */}
+            <rect x="55" y="220" width="50" height="40" rx="6" fill="white" opacity="0.12" />
+            <rect x="115" y="228" width="35" height="32" rx="6" fill="white" opacity="0.15" />
+            <rect x="160" y="222" width="60" height="38" rx="6" fill="white" opacity="0.12" />
+            <rect x="235" y="230" width="40" height="30" rx="6" fill="white" opacity="0.1" />
+            <rect x="285" y="225" width="55" height="35" rx="6" fill="white" opacity="0.14" />
+
+            {/* Scanner barcode lines */}
+            {[...Array(4)].map((_, i) => (
+              <line key={`bar-${i}`} x1={270 + i*8} y1="108" x2={270 + i*8} y2="128" stroke="white" strokeWidth="1.5" strokeOpacity="0.3" />
+            ))}
+            {[...Array(3)].map((_, i) => (
+              <line key={`bar2-${i}`} x1={300 + i*6} y1="108" x2={300 + i*6} y2="128" stroke="white" strokeWidth="1" strokeOpacity="0.3" />
+            ))}
+
+            {/* Magnifying glass / search icon */}
+            <circle cx="340" cy="110" r="18" stroke="white" strokeWidth="2" strokeOpacity="0.25" />
+            <line x1="353" y1="123" x2="362" y2="132" stroke="white" strokeWidth="2.5" strokeOpacity="0.25" strokeLinecap="round" />
+
+            {/* Arrow indicating incoming */}
+            <path d="M20 100 L50 100" stroke="white" strokeWidth="2" strokeOpacity="0.2" strokeLinecap="round" />
+            <path d="M42 93 L50 100 L42 107" stroke="white" strokeWidth="2" strokeOpacity="0.2" strokeLinecap="round" strokeLinejoin="round" />
+
+            {/* Arrow indicating outgoing */}
+            <path d="M370 160 L340 160" stroke="white" strokeWidth="2" strokeOpacity="0.15" strokeLinecap="round" />
+            <path d="M348 153 L340 160 L348 167" stroke="white" strokeWidth="2" strokeOpacity="0.15" strokeLinecap="round" strokeLinejoin="round" />
+
+            {/* Clipboards / documents */}
+            <rect x="280" y="80" width="22" height="30" rx="3" fill="white" opacity="0.12" stroke="white" strokeWidth="1" strokeOpacity="0.15" />
+            <line x1="285" y1="88" x2="297" y2="88" stroke="white" strokeWidth="1" strokeOpacity="0.2" />
+            <line x1="285" y1="93" x2="297" y2="93" stroke="white" strokeWidth="1" strokeOpacity="0.2" />
+            <line x1="285" y1="98" x2="293" y2="98" stroke="white" strokeWidth="1" strokeOpacity="0.2" />
+          </svg>
+        </div>
+
         {/* Content */}
         <div className="relative z-10">
           <div className="flex items-center gap-3 mb-8">
