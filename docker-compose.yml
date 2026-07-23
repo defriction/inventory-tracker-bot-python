@@ -64,7 +64,16 @@ services:
     labels:
       - "traefik.enable=true"
       
-      # --- FRONTEND (raíz del dominio) ---
+      # --- REDIRECCION HTTP -> HTTPS ---
+      - "traefik.http.middlewares.redirect-https.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.redirect-https.redirectscheme.permanent=true"
+      
+      # --- FRONTEND HTTP (redirige a HTTPS) ---
+      - "traefik.http.routers.inventory-front-http.rule=Host(`inventory.defriction.org`)"
+      - "traefik.http.routers.inventory-front-http.entrypoints=web"
+      - "traefik.http.routers.inventory-front-http.middlewares=redirect-https@docker"
+      
+      # --- FRONTEND HTTPS (raiz del dominio) ---
       - "traefik.http.routers.inventory-front.rule=Host(`inventory.defriction.org`)"
       - "traefik.http.routers.inventory-front.entrypoints=websecure"
       - "traefik.http.routers.inventory-front.tls=true"
