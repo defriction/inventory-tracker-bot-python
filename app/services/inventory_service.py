@@ -80,16 +80,21 @@ class InventoryService:
             return "📝 Necesito que me digas el nombre del producto\."
 
         try:
-            # 1. BUSCAR EL PRODUCTO (Lógica de Keywords)
+            # 1. BUSCAR EL PRODUCTO (Logica de Keywords)
             logger.info(f" Buscando producto: '{product_name}'")
 
-            # Habilitamos inferencia (Exacta > Parcial) para TODAS las acciones (incluido ACTUALIZAR)
-            use_exact_match = False
-            row_idx, real_name = self._find_product_row_by_keyword(product_name, exact_match=use_exact_match)
+            matches = self._find_products_by_keyword(product_name)
 
-            if row_idx:
+            if len(matches) == 1:
+                row_idx = matches[0]["row_idx"]
+                real_name = matches[0]["name"]
                 logger.info(f" Producto encontrado: '{real_name}' en fila {row_idx}")
+            elif len(matches) > 1:
+                logger.info(f" Multiples matches ({len(matches)}) para '{product_name}'")
+                return self._format_multi_match(matches, action, product_name)
             else:
+                row_idx = None
+                real_name = None
                 logger.info(f" Producto '{product_name}' no encontrado")
 
             # --- ENRUTADOR ---
@@ -101,7 +106,6 @@ class InventoryService:
                     logger.warning(f" Intento de crear producto duplicado: {real_name}")
                     response_text = f"⚠️ Ya encontré un producto similar: *{self._escape(real_name)}*\.\nUsa otro nombre si es diferente\."
                 else:
-                    # AHORA PASAMOS LA FECHA DE VENCIMIENTO A LA FUNCIN
                     response_text = self._create_product(product_name, price, qty, user_name, category, unit, expiration_date, location, purchase_price, invima, lote, requested_sku)
 
             # Para el resto de acciones el producto DEBE existir
@@ -160,16 +164,15 @@ class InventoryService:
         1. SKU Exacto.
         2. Nombre Exacto.
         3. Nombre Parcial (si exact_match=False).
+        Retorna (row_idx, name) del primer match encontrado, o (None, None).
+        Para busquedas que pueden tener multiples resultados, usar _find_products_by_keyword.
         """
         try:
-            # Optimización: Leer todo de una vez para buscar en múltiples columnas (SKU, Invima, Lote)
             rows = self.inventory_sheet.get_all_values()
             if not rows: return None, None
 
             query_norm = self._normalize(query)
 
-            # FIX: Limpieza profunda de la búsqueda (Query)
-            # Quitamos prefijos comunes que la IA o el usuario podrían incluir
             query_clean = query_norm
             for prefix in ["sku ", "lote ", "invima ", "inv "]:
                 if query_clean.startswith(prefix):
@@ -178,20 +181,14 @@ class InventoryService:
             if query_clean.endswith(".0"):
                 query_clean = query_clean[:-2]
 
-            # 1. BSQUEDA POR IDENTIFICADORES (SKU, INVIMA, LOTE) - Prioridad Máxima
+            # 1. BSQUEDA POR IDENTIFICADORES (SKU, INVIMA, LOTE)
             for i, row in enumerate(rows):
-                if i == 0: continue # Saltar encabezado
-
-                # Indices: 1=SKU, 2=Nombre, 10=Invima, 11=Lote
+                if i == 0: continue
                 sku = str(row[1]) if len(row) > 1 else ""
                 name = str(row[2]) if len(row) > 2 else "Producto sin nombre"
                 invima = str(row[10]) if len(row) > 10 else ""
                 lote = str(row[11]) if len(row) > 11 else ""
-
-                # Limpieza de SKU del excel
                 if sku.endswith(".0"): sku = sku[:-2]
-
-                # Comparamos contra SKU, INVIMA o LOTE
                 if (self._normalize(sku) == query_clean or
                     self._normalize(invima) == query_clean or
                     self._normalize(lote) == query_clean):
@@ -216,6 +213,92 @@ class InventoryService:
         except Exception as e:
             logger.error(f"Error buscando producto: {e}")
             return None, None
+
+    def _find_products_by_keyword(self, query: str) -> list:
+        """
+        Busca TODOS los productos que coinciden con query.
+        Prioridad: identificador exacto > nombre exacto > nombre parcial.
+        Retorna lista de dicts con: row_idx, name, sku, stock, category.
+        Si hay match exacto por identificador, retorna solo ese (es unico).
+        """
+        try:
+            rows = self.inventory_sheet.get_all_values()
+            if not rows:
+                return []
+
+            query_norm = self._normalize(query)
+            query_clean = query_norm
+            for prefix in ["sku ", "lote ", "invima ", "inv "]:
+                if query_clean.startswith(prefix):
+                    query_clean = query_clean[len(prefix):].strip()
+            if query_clean.endswith(".0"):
+                query_clean = query_clean[:-2]
+
+            def _extract(row, i):
+                sku = str(row[1]) if len(row) > 1 else ""
+                if sku.endswith(".0"): sku = sku[:-2]
+                name = str(row[2]) if len(row) > 2 else "Producto sin nombre"
+                stock = int(row[4]) if len(row) > 4 and str(row[4]).isdigit() else 0
+                cat = str(row[3]) if len(row) > 3 else ""
+                return {"row_idx": i + 1, "name": name, "sku": sku, "stock": stock, "category": cat}
+
+            # 1. Busqueda exacta por identificador (prioridad maxima, unico)
+            for i, row in enumerate(rows):
+                if i == 0: continue
+                sku = str(row[1]) if len(row) > 1 else ""
+                invima = str(row[10]) if len(row) > 10 else ""
+                lote = str(row[11]) if len(row) > 11 else ""
+                if sku.endswith(".0"): sku = sku[:-2]
+                if (self._normalize(sku) == query_clean or
+                    self._normalize(invima) == query_clean or
+                    self._normalize(lote) == query_clean):
+                    return [_extract(row, i)]
+
+            # 2. Busqueda exacta por nombre (puede haber duplicados)
+            exact_matches = []
+            for i, row in enumerate(rows):
+                if i == 0: continue
+                name = str(row[2]) if len(row) > 2 else ""
+                if self._normalize(name) == query_norm:
+                    exact_matches.append(_extract(row, i))
+            if exact_matches:
+                return exact_matches
+
+            # 3. Busqueda parcial por nombre (todos los que contengan query)
+            partial_matches = []
+            for i, row in enumerate(rows):
+                if i == 0: continue
+                name = str(row[2]) if len(row) > 2 else ""
+                if query_norm in self._normalize(name):
+                    partial_matches.append(_extract(row, i))
+
+            return partial_matches
+
+        except Exception as e:
+            logger.error(f"Error buscando productos: {e}")
+            return []
+
+    def _format_multi_match(self, matches: list, action: str, query: str) -> str:
+        """Formatea lista de opciones cuando hay multiples coincidencias."""
+        action_labels = {
+            "VENTA": "vender",
+            "COMPRA": "comprar",
+            "CONSULTA": "consultar",
+            "ACTUALIZAR": "actualizar"
+        }
+        action_label = action_labels.get(action, "gestionar")
+
+        lines = [f"🔍 Encontré *{len(matches)}* productos con \"{self._escape(query)}\"\\. ¿A cuál te refieres?\n"]
+
+        for idx, m in enumerate(matches, 1):
+            stock_badge = "⚠️" if m["stock"] <= 5 else "📦"
+            lines.append(
+                f"{idx}️⃣  *{self._escape(m['name'])}*  \\|  🔢 `{self._escape(m['sku'])}`\n"
+                f"     📂 {self._escape(m['category'])}  \\|  {stock_badge} {self._escape(m['stock'])} UND"
+            )
+
+        lines.append(f"\n_Responde con el *SKU* o *nombre exacto* para {action_label}\\._")
+        return "\n".join(lines)
 
     def _create_product(self, name, price, initial_stock, user, category="General", unit="UND", expiration_date="", location="", purchase_price=0, invima="", lote="", requested_sku=""):
         """Crea producto nuevo incluyendo Fecha de Vencimiento"""
