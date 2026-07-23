@@ -1,43 +1,56 @@
 version: '3.8'
 
 services:
-  # 📦 TU BOT DE INVENTARIO
+  # 📦 BOT + API (Python/FastAPI)
   inventory_bot:
     build: .
     container_name: inventory_saas
     restart: always
     env_file: .env
     volumes:
-      # ⚠️ IMPORTANTE: Sube estos archivos desde tu PC al servidor
-      # El token.json es vital porque contiene tu sesión de Google activa
       - ./client_secret.json:/app/client_secret.json
       - ./token.json:/app/token.json
     networks:
-      - proxy # Red pública de Traefik
-      # - internal # Descomenta si necesitas conectar con una base de datos interna en el futuro
+      - proxy
     labels:
       - "traefik.enable=true"
       
-      # --- CONFIGURACIÓN DE RUTA ---
-      # Todo lo que empiece por /inventory irá a este contenedor
-      # Tu URL quedará: https://n8n.srv1153123.hstgr.cloud/inventory/webhook/telegram
-      - "traefik.http.routers.inventory-bot.rule=Host(`n8n.srv1153123.hstgr.cloud`) && PathPrefix(`/inventory`)"
-      - "traefik.http.routers.inventory-bot.entrypoints=websecure"
-      - "traefik.http.routers.inventory-bot.tls=true"
-      - "traefik.http.routers.inventory-bot.tls.certresolver=mytlschallenge"
+      # --- API BACKEND ---
+      - "traefik.http.routers.inventory-api.rule=Host(`inventory-api.defriction.org`)"
+      - "traefik.http.routers.inventory-api.entrypoints=websecure"
+      - "traefik.http.routers.inventory-api.tls=true"
+      - "traefik.http.routers.inventory-api.tls.certresolver=mytlschallenge"
+      - "traefik.http.services.inventory-api.loadbalancer.server.port=8000"
       
-      # --- PUERTO ---
-      # FastAPI corre en el 8000 internamente
-      - "traefik.http.services.inventory-bot.loadbalancer.server.port=8000"
-      
-      # --- MIDDLEWARE (STRIP PREFIX) ---
-      # Le quitamos el "/inventory" antes de pasarlo a Python, para que FastAPI lea "/webhook/telegram"
+      # --- LEGADO (opcional, para transición) ---
+      - "traefik.http.routers.inventory-bot-legacy.rule=Host(`n8n.srv1153123.hstgr.cloud`) && PathPrefix(`/inventory`)"
+      - "traefik.http.routers.inventory-bot-legacy.entrypoints=websecure"
+      - "traefik.http.routers.inventory-bot-legacy.tls=true"
+      - "traefik.http.routers.inventory-bot-legacy.tls.certresolver=mytlschallenge"
       - "traefik.http.middlewares.inventory-strip.stripprefix.prefixes=/inventory"
-      - "traefik.http.routers.inventory-bot.middlewares=inventory-strip@docker"
+      - "traefik.http.routers.inventory-bot-legacy.middlewares=inventory-strip@docker"
+      
+      - "traefik.docker.network=proxy"
+
+  # 🎨 DASHBOARD FRONTEND (Next.js)
+  inventory_front:
+    build: ./front
+    container_name: inventory_front
+    restart: always
+    networks:
+      - proxy
+    labels:
+      - "traefik.enable=true"
+      
+      # --- DOMINIO PRINCIPAL ---
+      - "traefik.http.routers.inventory-front.rule=Host(`inventory.defriction.org`)"
+      - "traefik.http.routers.inventory-front.entrypoints=websecure"
+      - "traefik.http.routers.inventory-front.tls=true"
+      - "traefik.http.routers.inventory-front.tls.certresolver=mytlschallenge"
+      - "traefik.http.services.inventory-front.loadbalancer.server.port=3000"
+      
       - "traefik.docker.network=proxy"
 
 networks:
   proxy:
     external: true
-  # internal: 
-  #   external: true
