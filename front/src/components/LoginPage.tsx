@@ -19,7 +19,7 @@ export default function LoginPage({ onLogin, loading, error }: Props) {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#f5f6f8]">
+    <div className="min-h-screen bg-white flex flex-col" suppressHydrationWarning>
       <PwaInstallBanner />
 
       <div className="flex-1 flex flex-col lg:flex-row">

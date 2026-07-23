@@ -83,7 +83,7 @@ export default function Home() {
   const visibleNav = navItems.filter(n => !n.adminOnly || isAdmin);
 
   return (
-    <div className="min-h-screen bg-[#f5f6f8]">
+    <div className="min-h-screen bg-[#f5f6f8]" suppressHydrationWarning>
       <PwaInstallBanner />
       {/* Zeus-style Glass Navbar */}
       <nav className={`sticky top-3 z-50 mx-auto max-w-fit transition-all duration-300 ${
