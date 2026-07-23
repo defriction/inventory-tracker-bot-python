@@ -1,15 +1,16 @@
 'use client';
 
 import { useState } from 'react';
-import { Bot, LayoutDashboard, Package, BarChart3, LogOut } from 'lucide-react';
+import { Bot, LayoutDashboard, Package, BarChart3, LogOut, Truck } from 'lucide-react';
 import StatsCards from '@/components/StatsCards';
 import AlertsPanel from '@/components/AlertsPanel';
 import RecentMovements from '@/components/RecentMovements';
 import InventoryTable from '@/components/InventoryTable';
 import AnalyticsPanel from '@/components/AnalyticsPanel';
 import PwaInstallBanner from '@/components/PwaInstallBanner';
+import OrderTracker from '@/components/OrderTracker';
 
-type Tab = 'dashboard' | 'inventory' | 'analytics';
+type Tab = 'dashboard' | 'inventory' | 'analytics' | 'orders';
 
 export default function Home() {
   const [token, setToken] = useState(() => {
@@ -117,6 +118,10 @@ export default function Home() {
                   <BarChart3 className="w-4 h-4" />
                   <span className="hidden sm:inline ml-1.5">Analytics</span>
                 </TabButton>
+                <TabButton active={activeTab === 'orders'} onClick={() => setActiveTab('orders')}>
+                  <Truck className="w-4 h-4" />
+                  <span className="hidden sm:inline ml-1.5">Pedidos</span>
+                </TabButton>
               </div>
             </div>
 
@@ -154,13 +159,21 @@ export default function Home() {
             </div>
             <InventoryTable token={token} />
           </div>
-        ) : (
+        ) : activeTab === 'analytics' ? (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="mb-6">
               <h2 className="text-lg font-semibold text-gray-900 tracking-[-0.3px]" style={{ fontFeatureSettings: "'cv01', 'ss03'" }}>Analytics de Negocio</h2>
               <p className="text-sm text-gray-500 mt-1">Revenue, tendencias, margenes y recomendaciones</p>
             </div>
             <AnalyticsPanel token={token} />
+          </div>
+        ) : (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="mb-6">
+              <h2 className="text-lg font-semibold text-gray-900 tracking-[-0.3px]" style={{ fontFeatureSettings: "'cv01', 'ss03'" }}>Seguimiento de Pedidos</h2>
+              <p className="text-sm text-gray-500 mt-1">Centraliza tus pedidos, proveedores y numeros de rastreo</p>
+            </div>
+            <OrderTracker token={token} />
           </div>
         )}
       </main>

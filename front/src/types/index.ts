@@ -253,3 +253,23 @@ export interface AdjustmentItem {
   total_qty_adjusted: number;
   current_stock: number;
 }
+
+export interface Order {
+  id: number;
+  order_number: string;
+  supplier: string;
+  product_name: string;
+  quantity: number;
+  tracking_number: string;
+  shipping_company: string;
+  tracking_url: string;
+  status: string;
+  notes: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface OrdersResponse {
+  orders: Order[];
+  stats: { by_status: Record<string, number> };
+}

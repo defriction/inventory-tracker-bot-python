@@ -20,6 +20,7 @@ services:
     volumes:
       - ./client_secret.json:/app/client_secret.json
       - ./token.json:/app/token.json
+      - orders_data:/app/data
     networks:
       - proxy
     labels:
@@ -91,3 +92,4 @@ networks:
 
 volumes:
   redis_data:
+  orders_data:
