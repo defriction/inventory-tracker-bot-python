@@ -23,3 +23,11 @@ credentials.json
 # IDEs
 .vscode/
 .idea/
+
+# Frontend
+front/node_modules/
+front/.next/
+front/out/
+
+# Graphify cache
+graphify-out/
