@@ -3,6 +3,7 @@ from pydantic import BaseModel
 from typing import Optional
 from app.services.tenant_service import TenantService
 from app.services.usage_tracker import UsageTracker
+from app.core.cache import get_cache, set_cache
 
 router = APIRouter(prefix='/api/usage', tags=['Analytics de Uso'])
 
@@ -15,12 +16,31 @@ class TrackEvent(BaseModel):
 
 
 def get_tracker(token: str = Query(...)):
-    tenant_service = TenantService()
-    cell = tenant_service.admin_sheet.find(token)
-    if not cell:
-        raise HTTPException(status_code=401, detail="Token invalido")
-    row = tenant_service.admin_sheet.row_values(cell.row)
-    return UsageTracker(tenant_id=row[1])
+    cache_key = f"tenant_lookup:{token}"
+
+    # Cache hit — skip Google Sheets entirely
+    cached = get_cache(cache_key, ttl=300)
+    if cached and cached.get("tenant_id"):
+        return UsageTracker(tenant_id=cached["tenant_id"])
+
+    try:
+        tenant_service = TenantService()
+        cell = tenant_service.admin_sheet.find(token)
+        if not cell:
+            raise HTTPException(status_code=401, detail="Token invalido")
+        row = tenant_service.admin_sheet.row_values(cell.row)
+        tenant_id = row[1]
+
+        # Cache for 5 minutes
+        set_cache(cache_key, {"tenant_id": tenant_id}, ttl=300)
+
+        return UsageTracker(tenant_id=tenant_id)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger = __import__('logging').getLogger(__name__)
+        logger.error(f"Error buscando token en Google Sheets: {e}")
+        raise HTTPException(status_code=503, detail="Servicio temporalmente no disponible")
 
 
 @router.post('/track')
