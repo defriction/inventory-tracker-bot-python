@@ -113,18 +113,6 @@ inventory-tracker-bot-python/
 
 ---
 
-## 💰 Modelo de Negocio
-
-**Plan Unico — $30.000 COP/mes** (anual: $300.000 = 2 meses gratis)
-
-- Todo incluido: bot Telegram + dashboard + analytics + pedidos + PDF
-- Usuarios ilimitados por PyME
-- Productos ilimitados
-- PWA instalable
-- Soporte WhatsApp
-
----
-
 ## 🔒 Infraestructura
 
 - **Dominio:** inventory.defriction.org
