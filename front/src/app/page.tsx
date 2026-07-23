@@ -147,9 +147,9 @@ export default function Home() {
         </div>
       </nav>
 
-      {/* Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 animate-in fade-in duration-300">
-        {activeTab === 'dashboard' ? (
+      {/* Content — tabs kept in DOM for smooth transitions */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className={activeTab === 'dashboard' ? '' : 'hidden'}>
           <div className="space-y-6">
             <StatsCards token={token} />
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -159,17 +159,22 @@ export default function Home() {
               </div>
             </div>
           </div>
-        ) : activeTab === 'inventory' ? (
-          <div><InventoryTable token={token} /></div>
-        ) : activeTab === 'analytics' ? (
-          <div><AnalyticsPanel token={token} /></div>
-        ) : activeTab === 'orders' ? (
-          <div><OrderTracker token={token} /></div>
-        ) : activeTab === 'po_builder' ? (
-          <div><PurchaseOrderBuilder token={token} /></div>
-        ) : (
-          <div><UsageStats token={token} /></div>
-        )}
+        </div>
+        <div className={activeTab === 'inventory' ? '' : 'hidden'}>
+          <InventoryTable token={token} />
+        </div>
+        <div className={activeTab === 'analytics' ? '' : 'hidden'}>
+          <AnalyticsPanel token={token} />
+        </div>
+        <div className={activeTab === 'orders' ? '' : 'hidden'}>
+          <OrderTracker token={token} />
+        </div>
+        <div className={activeTab === 'po_builder' ? '' : 'hidden'}>
+          <PurchaseOrderBuilder token={token} />
+        </div>
+        <div className={activeTab === 'usage' ? '' : 'hidden'}>
+          <UsageStats token={token} />
+        </div>
       </main>
     </div>
   );
