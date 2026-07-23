@@ -1,9 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
-  Bot, LayoutDashboard, Package, BarChart3, Truck, FileText, Activity,
-  LogOut, Search, Bell, ChevronDown, Plus, MoreHorizontal, Calendar, Clock
+  Bot, LayoutDashboard, Package, BarChart3, Truck, FileText, Activity, LogOut
 } from 'lucide-react';
 import StatsCards from '@/components/StatsCards';
 import AlertsPanel from '@/components/AlertsPanel';
@@ -22,7 +21,7 @@ const navItems: { id: Tab; label: string; icon: any; adminOnly?: boolean }[] = [
   { id: 'inventory', label: 'Inventario', icon: Package },
   { id: 'analytics', label: 'Analytics', icon: BarChart3 },
   { id: 'orders', label: 'Pedidos', icon: Truck },
-  { id: 'po_builder', label: 'Armar Pedido', icon: FileText },
+  { id: 'po_builder', label: 'Pedido', icon: FileText },
   { id: 'usage', label: 'Uso', icon: Activity, adminOnly: true },
 ];
 
@@ -38,9 +37,15 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [scrollY, setScrollY] = useState(0);
 
   const isAdmin = token === '3HF784F';
+
+  useEffect(() => {
+    const handleScroll = () => setScrollY(window.scrollY);
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -77,111 +82,87 @@ export default function Home() {
   const visibleNav = navItems.filter(n => !n.adminOnly || isAdmin);
 
   return (
-    <div className="min-h-screen bg-[#f5f6f8] flex">
-      {/* Sidebar */}
-      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-100 flex flex-col transition-transform lg:translate-x-0 lg:static lg:z-auto ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-        {/* Backdrop mobile */}
-        {sidebarOpen && <div className="fixed inset-0 bg-black/20 lg:hidden" onClick={() => setSidebarOpen(false)} />}
+    <div className="min-h-screen bg-[#f5f6f8]">
+      {/* Zeus-style Glass Navbar */}
+      <nav className={`sticky top-3 z-50 mx-auto max-w-fit transition-all duration-300 ${
+        scrollY > 20 ? 'px-4' : 'px-2'
+      }`}>
+        <div className={`relative flex items-center gap-1 px-2 py-1.5 rounded-2xl transition-all duration-500 ${
+          scrollY > 20
+            ? 'bg-white/70 backdrop-blur-2xl border border-white/40 shadow-lg shadow-black/[0.02]'
+            : 'bg-white/60 backdrop-blur-xl border border-white/50 shadow-md shadow-black/[0.01]'
+        }`}>
+          {/* Liquid glass highlight */}
+          <div className="absolute inset-0 rounded-2xl bg-gradient-to-b from-white/60 via-transparent to-transparent pointer-events-none" />
 
-        <div className="relative z-10 flex-1 flex flex-col">
           {/* Logo */}
-          <div className="px-6 py-6 border-b border-gray-50">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center shadow-md shadow-indigo-500/20">
-                <Bot className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <h1 className="text-sm font-bold text-gray-900">Inventario</h1>
-                <p className="text-[10px] text-gray-400">Inteligente</p>
-              </div>
+          <div className="relative flex items-center gap-2 pr-2 mr-1 border-r border-gray-200/60">
+            <div className="w-7 h-7 rounded-[10px] bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center shadow-sm shadow-indigo-500/20">
+              <Bot className="w-3.5 h-3.5 text-white" />
             </div>
+            <span className="hidden sm:block text-xs font-semibold text-gray-700 tracking-tight">Inventario</span>
           </div>
 
-          {/* Nav */}
-          <nav className="flex-1 px-3 py-4 space-y-0.5">
+          {/* Nav items */}
+          <div className="relative flex items-center gap-0.5">
             {visibleNav.map(item => (
               <button
                 key={item.id}
-                onClick={() => { setActiveTab(item.id); setSidebarOpen(false); }}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
+                onClick={() => setActiveTab(item.id)}
+                className={`relative flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-medium transition-all duration-300 ${
                   activeTab === item.id
-                    ? 'bg-indigo-50 text-indigo-700 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                    ? 'bg-white text-gray-900 shadow-sm shadow-black/[0.03] scale-[1.02]'
+                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100/50'
                 }`}
               >
-                <item.icon className={`w-5 h-5 ${activeTab === item.id ? 'text-indigo-600' : 'text-gray-400'}`} />
-                {item.label}
+                <item.icon className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${activeTab === item.id ? 'text-indigo-600' : 'text-gray-400'}`} />
+                <span className="hidden sm:inline">{item.label}</span>
+                {/* Active indicator dot for mobile */}
+                {activeTab === item.id && (
+                  <span className="sm:hidden absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-indigo-600" />
+                )}
               </button>
             ))}
-          </nav>
+          </div>
 
-          {/* User area */}
-          <div className="px-4 py-4 border-t border-gray-50">
+          {/* Right — logout */}
+          <div className="relative flex items-center pl-2 ml-1 border-l border-gray-200/60">
+            <span className="hidden sm:block text-[10px] text-gray-400 font-mono mr-2 bg-gray-100/80 px-1.5 py-0.5 rounded-md">{token.slice(0, 4)}</span>
             <button
               onClick={() => { setIsAuthenticated(false); localStorage.removeItem('inventory_token'); localStorage.removeItem('inventory_auth'); }}
-              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-colors"
+              className="flex items-center gap-1 px-2 py-1.5 rounded-xl text-xs text-gray-400 hover:text-red-500 hover:bg-red-50/50 transition-all duration-200"
+              title="Cerrar sesion"
             >
-              <LogOut className="w-4 h-4" /> Cerrar sesion
+              <LogOut className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
-      </aside>
+      </nav>
 
-      {/* Main */}
-      <div className="flex-1 flex flex-col min-w-0">
-        {/* Top bar */}
-        <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-xl border-b border-gray-100">
-          <div className="flex items-center justify-between h-14 px-4 sm:px-6">
-            <div className="flex items-center gap-4">
-              <button onClick={() => setSidebarOpen(true)} className="lg:hidden p-2 -ml-2 rounded-lg hover:bg-gray-100">
-                <svg className="w-5 h-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
-              </button>
-              <h2 className="text-sm font-semibold text-gray-700">
-                {visibleNav.find(n => n.id === activeTab)?.label || 'Dashboard'}
-              </h2>
-            </div>
-            <div className="flex items-center gap-3">
-              <span className="text-xs text-gray-400 font-mono bg-gray-50 px-2.5 py-1 rounded-lg">{token.slice(0, 6)}</span>
-              {isAdmin && <span className="text-[10px] font-semibold bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full">Admin</span>}
-            </div>
-          </div>
-        </header>
-
-        {/* Content */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-auto">
-          {activeTab === 'dashboard' ? (
-            <div className="space-y-6 animate-in fade-in duration-300">
-              <StatsCards token={token} />
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2"><RecentMovements token={token} /></div>
-                <div className="lg:col-span-1 space-y-4">
-                  <AlertsPanel token={token} />
-                </div>
+      {/* Content */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 animate-in fade-in duration-300">
+        {activeTab === 'dashboard' ? (
+          <div className="space-y-6">
+            <StatsCards token={token} />
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2"><RecentMovements token={token} /></div>
+              <div className="lg:col-span-1 space-y-4">
+                <AlertsPanel token={token} />
               </div>
             </div>
-          ) : activeTab === 'inventory' ? (
-            <div className="animate-in fade-in duration-300">
-              <InventoryTable token={token} />
-            </div>
-          ) : activeTab === 'analytics' ? (
-            <div className="animate-in fade-in duration-300">
-              <AnalyticsPanel token={token} />
-            </div>
-          ) : activeTab === 'orders' ? (
-            <div className="animate-in fade-in duration-300">
-              <OrderTracker token={token} />
-            </div>
-          ) : activeTab === 'po_builder' ? (
-            <div className="animate-in fade-in duration-300">
-              <PurchaseOrderBuilder token={token} />
-            </div>
-          ) : (
-            <div className="animate-in fade-in duration-300">
-              <UsageStats token={token} />
-            </div>
-          )}
-        </main>
-      </div>
+          </div>
+        ) : activeTab === 'inventory' ? (
+          <div><InventoryTable token={token} /></div>
+        ) : activeTab === 'analytics' ? (
+          <div><AnalyticsPanel token={token} /></div>
+        ) : activeTab === 'orders' ? (
+          <div><OrderTracker token={token} /></div>
+        ) : activeTab === 'po_builder' ? (
+          <div><PurchaseOrderBuilder token={token} /></div>
+        ) : (
+          <div><UsageStats token={token} /></div>
+        )}
+      </main>
     </div>
   );
 }
