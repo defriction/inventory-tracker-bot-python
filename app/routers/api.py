@@ -86,10 +86,12 @@ async def get_inventory(
     token: str = Query(...),
     inventory_service: InventoryService = Depends(get_inventory_service)
 ):
-    """
-    Obtiene todos los productos del inventario.
-    El frontend Next.js consume este endpoint.
-    """
+    """Obtiene todos los productos del inventario."""
+    cache_key = f"inventory:{token}"
+    cached = get_cache(cache_key, ttl=60)
+    if cached is not None:
+        return cached
+
     try:
         rows = inventory_service.inventory_sheet.get_all_values()
         if not rows or len(rows) < 2:
@@ -117,7 +119,9 @@ async def get_inventory(
             }
             products.append(product)
         
-        return {"products": products, "total": len(products)}
+        result = {"products": products, "total": len(products)}
+        set_cache(cache_key, result, ttl=60)
+        return result
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error leyendo inventario: {str(e)}")
@@ -231,7 +235,9 @@ async def get_movements(
         movements.sort(key=lambda x: x['timestamp'], reverse=True)
         limited = movements[:limit]
         
-        return {"movements": limited, "total": len(movements)}
+        result = {"movements": limited, "total": len(movements)}
+        set_cache(cache_key, result, ttl=60)
+        return result
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -241,7 +247,12 @@ async def get_stats(
     token: str = Query(...),
     inventory_service: InventoryService = Depends(get_inventory_service)
 ):
-    """Estadisticas agregadas: total productos, valor inventario, alertas."""
+    """Estadisticas agregadas."""
+    cache_key = f"stats:{token}"
+    cached = get_cache(cache_key, ttl=60)
+    if cached is not None:
+        return cached
+
     try:
         rows = inventory_service.inventory_sheet.get_all_values()
         if not rows or len(rows) < 2:
@@ -270,12 +281,14 @@ async def get_stats(
                 except Exception:
                     pass
 
-        return {
+        result = {
             "total_products": total_products,
             "total_stock_value": round(total_stock_value, 2),
             "low_stock_count": low_stock_count,
             "expiring_count": expiring_count,
         }
+        set_cache(cache_key, result, ttl=60)
+        return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -285,7 +298,12 @@ async def get_alerts(
     token: str = Query(...),
     inventory_service: InventoryService = Depends(get_inventory_service)
 ):
-    """Productos con stock bajo (<=5) o proximos a vencer (<=30 dias)."""
+    """Productos con stock bajo o proximos a vencer."""
+    cache_key = f"alerts:{token}"
+    cached = get_cache(cache_key, ttl=60)
+    if cached is not None:
+        return cached
+
     try:
         rows = inventory_service.inventory_sheet.get_all_values()
         if not rows or len(rows) < 2:
@@ -318,7 +336,9 @@ async def get_alerts(
                 except Exception:
                     pass
 
-        return {"low_stock": low_stock, "expiring": expiring}
+        result = {"low_stock": low_stock, "expiring": expiring}
+        set_cache(cache_key, result, ttl=60)
+        return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
