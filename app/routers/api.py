@@ -120,7 +120,7 @@ async def get_inventory(
             products.append(product)
         
         result = {"products": products, "total": len(products)}
-        set_cache(cache_key, result, ttl=60)
+        set_cache(cache_key, result, ttl=30)
         return result
         
     except Exception as e:
@@ -211,7 +211,7 @@ async def get_movements(
 ):
     """Historial de movimientos."""
     cache_key = f"movements:{token}:{limit}"
-    cached = get_cache(cache_key, ttl=60)
+    cached = get_cache(cache_key, ttl=30)
     if cached is not None:
         return cached
 
@@ -241,7 +241,7 @@ async def get_movements(
         limited = movements[:limit]
         
         result = {"movements": limited, "total": len(movements)}
-        set_cache(cache_key, result, ttl=60)
+        set_cache(cache_key, result, ttl=30)
         return result
         
     except Exception as e:
@@ -254,7 +254,7 @@ async def get_stats(
 ):
     """Estadisticas agregadas."""
     cache_key = f"stats:{token}"
-    cached = get_cache(cache_key, ttl=60)
+    cached = get_cache(cache_key, ttl=30)
     if cached is not None:
         return cached
 
@@ -292,7 +292,7 @@ async def get_stats(
             "low_stock_count": low_stock_count,
             "expiring_count": expiring_count,
         }
-        set_cache(cache_key, result, ttl=60)
+        set_cache(cache_key, result, ttl=30)
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -305,7 +305,7 @@ async def get_alerts(
 ):
     """Productos con stock bajo o proximos a vencer."""
     cache_key = f"alerts:{token}"
-    cached = get_cache(cache_key, ttl=60)
+    cached = get_cache(cache_key, ttl=30)
     if cached is not None:
         return cached
 
@@ -342,7 +342,7 @@ async def get_alerts(
                     pass
 
         result = {"low_stock": low_stock, "expiring": expiring}
-        set_cache(cache_key, result, ttl=60)
+        set_cache(cache_key, result, ttl=30)
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -587,3 +587,11 @@ async def receive_order(
     invalidate_pattern(f"*:{token}*")
 
     return {"status": "ok", "messages": messages}
+
+
+@router.post('/invalidate-cache')
+async def invalidate_cache(token: str = Query(...)):
+    """Fuerza limpieza de cache para refrescar datos."""
+    from app.core.cache import invalidate_pattern
+    count = invalidate_pattern(f"*:{token}*")
+    return {"status": "ok", "keys_invalidated": count}

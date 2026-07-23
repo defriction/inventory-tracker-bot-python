@@ -57,6 +57,12 @@ export default function Home() {
     }).catch(() => {});
   }, [activeTab, isAuthenticated]);
 
+  // Invalidate cache on mount to get fresh data
+  useEffect(() => {
+    if (!isAuthenticated || isAdmin) return;
+    fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/invalidate-cache?token=${token}`, { method: 'POST' }).catch(() => {});
+  }, [isAuthenticated]);
+
   const handleLogin = async (t: string) => {
     setToken(t);
     setLoading(true);

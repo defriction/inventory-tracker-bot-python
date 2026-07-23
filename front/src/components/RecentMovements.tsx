@@ -30,7 +30,7 @@ export default function RecentMovements({ token }: { token: string }) {
         .finally(() => setLoading(false));
     };
     fetchData();
-    const interval = setInterval(fetchData, 120000);
+    const interval = setInterval(fetchData, 60000);
     return () => clearInterval(interval);
   }, [token]);
 

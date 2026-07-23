@@ -12,7 +12,7 @@ export default function StatsCards({ token }: { token: string }) {
   useEffect(() => {
     const fetchData = () => { getStats(token).then(setStats).catch(() => {}).finally(() => setLoading(false)); };
     fetchData();
-    const interval = setInterval(fetchData, 120000);
+    const interval = setInterval(fetchData, 60000);
     return () => clearInterval(interval);
   }, [token]);
 
