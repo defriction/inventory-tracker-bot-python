@@ -7,23 +7,12 @@ export default function PwaInstallBanner() {
   const [show, setShow] = useState(false);
   const [prompt, setPrompt] = useState<any>(null);
   const [isIos, setIsIos] = useState(false);
-  const [isStandalone, setIsStandalone] = useState(false);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    // Already in standalone mode
-    if (window.matchMedia('(display-mode: standalone)').matches) {
-      setIsStandalone(true);
-      return;
-    }
-
     const ua = navigator.userAgent;
     setIsIos(/iphone|ipad|ipod/.test(ua.toLowerCase()));
-
-    // Check if dismissed in last 24h
-    const d = localStorage.getItem('pwa_dismissed');
-    if (d && Date.now() - parseInt(d) < 86400000) return;
 
     // Chrome/Edge/Android — listen for beforeinstallprompt
     const handler = (e: Event) => {
@@ -33,13 +22,9 @@ export default function PwaInstallBanner() {
     };
     window.addEventListener('beforeinstallprompt', handler);
 
-    // iOS doesn't fire the event — show after a delay
+    // iOS or desktop without event — show after delay
     const t = setTimeout(() => {
-      if (isIos) setShow(true);
-      // Also show for desktop where event might not fire
-      if (!isIos && !window.matchMedia('(display-mode: standalone)').matches) {
-        setShow(true);
-      }
+      setShow(true);
     }, 3000);
 
     return () => {
@@ -51,30 +36,24 @@ export default function PwaInstallBanner() {
   const install = async () => {
     if (prompt) {
       prompt.prompt();
-      const r = await prompt.userChoice;
-      if (r.outcome === 'accepted') {
-        setShow(false);
-        localStorage.setItem('pwa_dismissed', Date.now().toString());
-      }
+      await prompt.userChoice;
       setPrompt(null);
     }
   };
 
   const dismiss = () => {
     setShow(false);
-    localStorage.setItem('pwa_dismissed', Date.now().toString());
+    // Only dismiss for this session — show again on reload
   };
 
-  if (!show || isStandalone) return null;
+  if (!show) return null;
 
   return (
     <div className="rounded-xl border-2 border-indigo-300 bg-gradient-to-br from-indigo-50 via-white to-indigo-50 p-5 shadow-md shadow-indigo-100/50 relative overflow-hidden">
-      {/* Background decoration */}
       <div className="absolute -top-6 -right-6 w-24 h-24 bg-indigo-100/50 rounded-full blur-2xl" />
       <div className="absolute -bottom-4 -left-4 w-20 h-20 bg-violet-100/50 rounded-full blur-2xl" />
 
       <div className="relative">
-        {/* Header */}
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center">
@@ -90,7 +69,6 @@ export default function PwaInstallBanner() {
           </button>
         </div>
 
-        {/* Content */}
         {isIos ? (
           <div className="flex items-start gap-2 p-3 rounded-lg bg-white/80 border border-gray-200">
             <Share2 className="w-4 h-4 text-indigo-600 mt-0.5 shrink-0" />
