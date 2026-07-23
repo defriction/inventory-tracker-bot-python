@@ -121,3 +121,4 @@ inventory-tracker-bot-python/
 - **Cache:** Redis compartido entre workers
 - **Rate limiting:** Cache 60s en todos los endpoints (evita 429 de Google Sheets)
 - **Persistencia:** SQLite en volumen Docker para pedidos
+
