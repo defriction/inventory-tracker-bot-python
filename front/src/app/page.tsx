@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Bot, LayoutDashboard, Package, BarChart3, LogOut, Truck, FileText } from 'lucide-react';
+import { Bot, LayoutDashboard, Package, BarChart3, LogOut, Truck, FileText, Activity } from 'lucide-react';
 import StatsCards from '@/components/StatsCards';
 import AlertsPanel from '@/components/AlertsPanel';
 import RecentMovements from '@/components/RecentMovements';
@@ -10,8 +10,9 @@ import AnalyticsPanel from '@/components/AnalyticsPanel';
 import PwaInstallBanner from '@/components/PwaInstallBanner';
 import OrderTracker from '@/components/OrderTracker';
 import PurchaseOrderBuilder from '@/components/PurchaseOrderBuilder';
+import UsageStats from '@/components/UsageStats';
 
-type Tab = 'dashboard' | 'inventory' | 'analytics' | 'orders' | 'po_builder';
+type Tab = 'dashboard' | 'inventory' | 'analytics' | 'orders' | 'po_builder' | 'usage';
 
 export default function Home() {
   const [token, setToken] = useState(() => {
@@ -25,6 +26,8 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const isAdmin = token === '3HF784F';
 
   // Track tab switches for usage analytics
   useEffect(() => {
@@ -41,6 +44,16 @@ export default function Home() {
     if (token.length < 6) return;
     setLoading(true);
     setError('');
+
+    // Admin token: bypass API validation
+    if (token === '3HF784F') {
+      setIsAuthenticated(true);
+      localStorage.setItem('inventory_token', token);
+      localStorage.setItem('inventory_auth', 'true');
+      setLoading(false);
+      return;
+    }
+
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/stats?token=${token}`);
       if (!res.ok) {
@@ -110,34 +123,28 @@ export default function Home() {
                 </div>
                 <div className="hidden sm:block">
                   <h1 className="text-sm font-bold text-gray-900 leading-tight">Inventario Inteligente</h1>
-                  <p className="text-[10px] text-gray-400 leading-tight">Haciendo crecer tu negocio</p>
+                  <p className="text-[10px] text-gray-400 leading-tight">{isAdmin ? 'Panel Admin' : 'Haciendo crecer tu negocio'}</p>
                 </div>
               </div>
 
-              <div className="h-6 w-px bg-gray-200 hidden sm:block" />
+              {!isAdmin && <div className="h-6 w-px bg-gray-200 hidden sm:block" />}
 
-              <div className="flex bg-gray-100 rounded-xl p-0.5">
-                <TabButton active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')}>
-                  <LayoutDashboard className="w-4 h-4" />
-                  <span className="hidden sm:inline ml-1.5">Dashboard</span>
-                </TabButton>
-                <TabButton active={activeTab === 'inventory'} onClick={() => setActiveTab('inventory')}>
-                  <Package className="w-4 h-4" />
-                  <span className="hidden sm:inline ml-1.5">Inventario</span>
-                </TabButton>
-                <TabButton active={activeTab === 'analytics'} onClick={() => setActiveTab('analytics')}>
-                  <BarChart3 className="w-4 h-4" />
-                  <span className="hidden sm:inline ml-1.5">Analytics</span>
-                </TabButton>
-                <TabButton active={activeTab === 'orders'} onClick={() => setActiveTab('orders')}>
-                  <Truck className="w-4 h-4" />
-                  <span className="hidden sm:inline ml-1.5">Pedidos</span>
-                </TabButton>
-                <TabButton active={activeTab === 'po_builder'} onClick={() => setActiveTab('po_builder')}>
-                  <FileText className="w-4 h-4" />
-                  <span className="hidden sm:inline ml-1.5">Armar Pedido</span>
-                </TabButton>
-              </div>
+              {isAdmin ? (
+                <div className="flex bg-gray-100 rounded-xl p-0.5">
+                  <TabButton active={activeTab === 'usage'} onClick={() => setActiveTab('usage')}>
+                    <Activity className="w-4 h-4" />
+                    <span className="hidden sm:inline ml-1.5">Uso</span>
+                  </TabButton>
+                </div>
+              ) : (
+                <div className="flex bg-gray-100 rounded-xl p-0.5">
+                  <TabButton active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')}><LayoutDashboard className="w-4 h-4" /><span className="hidden sm:inline ml-1.5">Dashboard</span></TabButton>
+                  <TabButton active={activeTab === 'inventory'} onClick={() => setActiveTab('inventory')}><Package className="w-4 h-4" /><span className="hidden sm:inline ml-1.5">Inventario</span></TabButton>
+                  <TabButton active={activeTab === 'analytics'} onClick={() => setActiveTab('analytics')}><BarChart3 className="w-4 h-4" /><span className="hidden sm:inline ml-1.5">Analytics</span></TabButton>
+                  <TabButton active={activeTab === 'orders'} onClick={() => setActiveTab('orders')}><Truck className="w-4 h-4" /><span className="hidden sm:inline ml-1.5">Pedidos</span></TabButton>
+                  <TabButton active={activeTab === 'po_builder'} onClick={() => setActiveTab('po_builder')}><FileText className="w-4 h-4" /><span className="hidden sm:inline ml-1.5">Armar Pedido</span></TabButton>
+                </div>
+              )}
             </div>
 
             {/* Right: Actions */}
@@ -181,10 +188,15 @@ export default function Home() {
             <div className="mb-6"><h2 className="text-lg font-semibold text-gray-900 tracking-[-0.3px]" style={{ fontFeatureSettings: "'cv01', 'ss03'" }}>Seguimiento de Pedidos</h2><p className="text-sm text-gray-500 mt-1">Centraliza tus pedidos, proveedores y rastreo</p></div>
             <OrderTracker token={token} />
           </div>
-        ) : (
+        ) : activeTab === 'po_builder' ? (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="mb-6"><h2 className="text-lg font-semibold text-gray-900 tracking-[-0.3px]" style={{ fontFeatureSettings: "'cv01', 'ss03'" }}>Armar Pedido</h2><p className="text-sm text-gray-500 mt-1">Genera ordenes de compra desde tu inventario</p></div>
             <PurchaseOrderBuilder token={token} />
+          </div>
+        ) : (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="mb-6"><h2 className="text-lg font-semibold text-gray-900 tracking-[-0.3px]" style={{ fontFeatureSettings: "'cv01', 'ss03'" }}>Analytics de Uso</h2><p className="text-sm text-gray-500 mt-1">Como interactuan los usuarios con la aplicacion</p></div>
+            <UsageStats token={token} />
           </div>
         )}
       </main>
