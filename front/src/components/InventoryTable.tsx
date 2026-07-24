@@ -184,7 +184,11 @@ export default function InventoryTable({ token, jwt }: { token: string; jwt?: st
     return (
       <div className="rounded-xl border border-red-200 bg-red-50 p-8 text-center">
         <span className="text-3xl block mb-3">⚠️</span>
-        <p className="text-sm text-red-600">{error}</p>
+        <p className="text-sm text-red-600 mb-4">{error}</p>
+        <button onClick={() => { setError(''); setLoading(true); fetchData(); }}
+          className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-xl hover:bg-indigo-500 transition-colors">
+          Reintentar
+        </button>
       </div>
     );
   }
