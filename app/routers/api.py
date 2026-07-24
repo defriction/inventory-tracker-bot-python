@@ -1048,9 +1048,9 @@ async def create_remision(
             created_by="Web"
         )
         session.add(remision)
-        session.flush()  # Get remision.id
+        session.flush()
 
-        # Create items + deduct stock
+        # Create items
         for item in data.items:
             ri = RemisionItem(
                 remision_id=remision.id,
@@ -1063,21 +1063,23 @@ async def create_remision(
             )
             session.add(ri)
 
-            # Deduct stock
+        session.commit()
+        session.close()
+
+        # Deduct stock (after SA commit to release write lock)
+        for item in data.items:
             row_idx, _ = inventory_service._find_product_row_by_keyword(item.product_sku, exact_match=True)
             current_stock = int(inventory_service.inventory_sheet.cell(row_idx, 5).value or 0)
             inventory_service.inventory_sheet.update_cell(row_idx, 5, current_stock - item.quantity)
             inventory_service._log_movement("REMISION", item.product_sku, item.product_name,
                                             -item.quantity, "Web", f"Remision {remision.uid}")
 
-        session.commit()
         return {"status": "created", "id": remision.id, "uid": remision.uid}
     except HTTPException:
         raise
     except Exception as e:
-        import traceback
-        print(f"REMISION ERROR: {traceback.format_exc()}", flush=True)
-        session.rollback()
+        try: session.rollback()
+        except: pass
+        try: session.close()
+        except: pass
         raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        session.close()
