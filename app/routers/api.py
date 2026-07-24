@@ -152,10 +152,10 @@ async def get_product(
             "sku": values[1] if len(values) > 1 else "",
             "name": values[2] if len(values) > 2 else "",
             "category": values[3] if len(values) > 3 else "",
-            "stock": int(values[4]) if len(values) > 4 else 0,
+            "stock": int(values[4]) if len(values) > 4 and values[4].lstrip('-').isdigit() else 0,
             "unit": values[5] if len(values) > 5 else "UND",
-            "cost": float(values[6]) if len(values) > 6 else 0,
-            "price": float(values[7]) if len(values) > 7 else 0,
+            "cost": float(values[6]) if len(values) > 6 and values[6].replace('.','').replace('-','').isdigit() else 0,
+            "price": float(values[7]) if len(values) > 7 and values[7].replace('.','').replace('-','').isdigit() else 0,
             "expiration_date": values[8] if len(values) > 8 else "",
             "location": values[9] if len(values) > 9 else "",
             "invima": values[10] if len(values) > 10 else "",
@@ -208,6 +208,8 @@ async def update_product(
     except HTTPException:
         raise
     except Exception as e:
+        import traceback, logging
+        logging.getLogger('api').error(f"PATCH /products/{sku}: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.delete('/products/{sku}')
