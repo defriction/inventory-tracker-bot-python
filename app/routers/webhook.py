@@ -4,7 +4,7 @@ import sys
 from fastapi import APIRouter, Request, BackgroundTasks
 from app.core.config import settings
 from app.services.tenant_service import TenantService
-from app.services.factory import get_inventory_service
+from app.services.factory import get_inventory_service, get_tenant_service
 from app.services.ia_service import interpret_intent
 
 logger = logging.getLogger(__name__)
@@ -120,7 +120,7 @@ async def process_telegram_update(data: dict):
             return
 
         # 2. Verificar usuario en el sistema
-        tenant_service = TenantService()
+        tenant_service = get_tenant_service()
         tenant = tenant_service.get_tenant_by_user(str(user_id))
 
         # Flujo A: usuario nuevo (no registrado)

@@ -1,6 +1,6 @@
 """
-Migration script: Google Sheets → SQLite.
-Reads all tenants from USUARIOS_PYMES, imports INVENTARIO + MOVIMIENTOS into SQLite.
+Migration script: Google Sheets → SQLite (complete).
+Reads USUARIOS_PYMES, INVENTARIO, MOVIMIENTOS → SQLite.
 
 Usage: python scripts/migrate_to_sqlite.py
 Run from project root on the VPS (needs Google credentials and .env).
@@ -10,10 +10,62 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.services.tenant_service import TenantService
-from app.core.database import init_tenant_db, get_conn
 from app.services.inventory_service import InventoryService
+from app.core.database import init_admin_db, init_tenant_db, get_conn, get_admin_conn
 
 SHEET_COLS = ['uuid', 'sku', 'name', 'category', 'stock', 'unit', 'cost', 'price', 'expiration_date', 'location', 'invima', 'lote']
+
+
+def migrate_tenants_table(ts: TenantService):
+    """Import USUARIOS_PYMES into admin.db tenants table."""
+    print("\n📋 Migrando registro de tenants (USUARIOS_PYMES)...")
+    init_admin_db()
+
+    try:
+        all_rows = ts.admin_sheet.get_all_values()
+        if not all_rows or len(all_rows) < 2:
+            print("   ⚠️  No se encontraron tenants.")
+            return []
+
+        tenants = []
+        with get_admin_conn() as conn:
+            for row in all_rows[1:]:  # Skip header
+                if len(row) < 5:
+                    continue
+                # Col A=telegram_id, B=tenant_id, C=pyme_name, D=sheet_id, E=token, F=created_at, G=business_type
+                telegram_id = str(row[0]).strip() if len(row) > 0 else ''
+                tenant_id = str(row[1]).strip() if len(row) > 1 else ''
+                pyme_name = str(row[2]).strip() if len(row) > 2 else 'Sin nombre'
+                sheet_id = str(row[3]).strip() if len(row) > 3 else ''
+                token = str(row[4]).strip() if len(row) > 4 else ''
+                created_at = str(row[5]).strip() if len(row) > 5 else ''
+                business_type = str(row[6]).strip() if len(row) > 6 else ''
+
+                if not tenant_id or not token:
+                    continue
+
+                conn.execute(
+                    """INSERT OR REPLACE INTO tenants
+                       (telegram_id, tenant_id, pyme_name, sheet_id, token, created_at, business_type)
+                       VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                    (telegram_id, tenant_id, pyme_name, sheet_id, token, created_at, business_type)
+                )
+
+                tenants.append({
+                    'tenant_id': tenant_id,
+                    'sheet_id': sheet_id,
+                    'pyme_name': pyme_name,
+                    'token': token,
+                })
+
+        print(f"   ✅ {len(tenants)} tenants importados en admin.db")
+        return tenants
+
+    except Exception as e:
+        print(f"   ❌ Error importando tenants: {e}")
+        import traceback
+        traceback.print_exc()
+        return []
 
 
 def migrate_tenant(tenant_id: str, sheet_id: str, pyme_name: str):
@@ -28,7 +80,6 @@ def migrate_tenant(tenant_id: str, sheet_id: str, pyme_name: str):
     # ── Products ──
     try:
         rows = inv.inventory_sheet.get_all_values()
-        header = rows[0] if rows else []
         data_rows = rows[1:] if len(rows) > 1 else []
         print(f"  INVENTARIO: {len(data_rows)} productos encontrados")
 
@@ -37,7 +88,6 @@ def migrate_tenant(tenant_id: str, sheet_id: str, pyme_name: str):
             for row in data_rows:
                 if not row or not any(row):
                     continue
-                # Pad row to 12 columns
                 padded = (row + [''] * 12)[:12]
                 uuid_val = padded[0].strip() if padded[0].strip() else None
                 if not uuid_val:
@@ -110,49 +160,23 @@ def main():
         print("   Asegúrate de tener token.json y client_secret.json en el directorio actual.")
         sys.exit(1)
 
-    # Read all tenants
-    try:
-        all_rows = ts.admin_sheet.get_all_values()
-        if not all_rows or len(all_rows) < 2:
-            print("⚠️  No se encontraron tenants en USUARIOS_PYMES.")
-            sys.exit(0)
+    # Step 1: Migrate tenants registry
+    tenants = migrate_tenants_table(ts)
 
-        tenants = []
-        for row in all_rows[1:]:  # Skip header
-            if len(row) < 5:
-                continue
-            telegram_id = row[0] if len(row) > 0 else ''
-            tenant_id = row[1] if len(row) > 1 else ''
-            pyme_name = row[2] if len(row) > 2 else 'Sin nombre'
-            sheet_id = row[3] if len(row) > 3 else ''
-            token = row[4] if len(row) > 4 else ''
+    if not tenants:
+        print("\n⚠️  No hay tenants para migrar. Saliendo.")
+        sys.exit(0)
 
-            if not tenant_id or not sheet_id:
-                continue
+    # Step 2: Migrate each tenant's inventory + movements
+    for t in tenants:
+        migrate_tenant(t['tenant_id'], t['sheet_id'], t['pyme_name'])
 
-            tenants.append({
-                'tenant_id': tenant_id,
-                'sheet_id': sheet_id,
-                'pyme_name': pyme_name,
-                'token': token,
-            })
-
-        print(f"📋 {len(tenants)} tenants encontrados en USUARIOS_PYMES")
-
-        for t in tenants:
-            migrate_tenant(t['tenant_id'], t['sheet_id'], t['pyme_name'])
-
-        print(f"\n{'='*60}")
-        print(f"✅ Migración completada. {len(tenants)} tenants migrados.")
-        print(f"   Datos en: /app/data/inventory_*.db")
-        print(f"\n   Para activar SQLite, agrega al .env:")
-        print(f"   STORAGE_BACKEND=sqlite")
-
-    except Exception as e:
-        print(f"❌ Error: {e}")
-        import traceback
-        traceback.print_exc()
-        sys.exit(1)
+    print(f"\n{'='*60}")
+    print(f"✅ Migración completada.")
+    print(f"   Tenants: admin.db")
+    print(f"   Datos: /app/data/inventory_*.db")
+    print(f"\n   ⚡ STORAGE_BACKEND ya está en 'sqlite' por defecto.")
+    print(f"   Después del deploy, reinicia: docker compose restart")
 
 
 if __name__ == '__main__':

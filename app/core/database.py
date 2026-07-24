@@ -1,6 +1,8 @@
 """
-SQLite database manager — one DB file per tenant.
-Pattern: /app/data/inventory_{tenant_id}.db
+SQLite database manager — one DB file per tenant + one admin DB.
+Pattern:
+  Admin:   /app/data/admin.db
+  Tenant:  /app/data/inventory_{tenant_id}.db
 """
 import sqlite3
 import os
@@ -8,6 +10,8 @@ from contextlib import contextmanager
 
 DB_DIR = "/app/data"
 os.makedirs(DB_DIR, exist_ok=True)
+
+ADMIN_DB = os.path.join(DB_DIR, "admin.db")
 
 
 def get_db_path(tenant_id: str) -> str:
@@ -26,6 +30,38 @@ def get_conn(tenant_id: str):
         conn.commit()
     finally:
         conn.close()
+
+
+@contextmanager
+def get_admin_conn():
+    """Context manager for admin DB connection."""
+    conn = sqlite3.connect(ADMIN_DB)
+    conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA journal_mode=WAL")
+    try:
+        yield conn
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def init_admin_db():
+    """Create admin tables (tenants registry). Idempotent."""
+    with get_admin_conn() as conn:
+        conn.executescript("""
+            CREATE TABLE IF NOT EXISTS tenants (
+                telegram_id TEXT DEFAULT '',
+                tenant_id TEXT PRIMARY KEY,
+                pyme_name TEXT NOT NULL,
+                sheet_id TEXT DEFAULT '',
+                token TEXT NOT NULL UNIQUE,
+                created_at TEXT DEFAULT (datetime('now','localtime')),
+                business_type TEXT DEFAULT ''
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_tenants_token ON tenants(token);
+            CREATE INDEX IF NOT EXISTS idx_tenants_telegram ON tenants(telegram_id);
+        """)
 
 
 def init_tenant_db(tenant_id: str):

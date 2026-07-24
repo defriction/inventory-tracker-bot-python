@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
-from app.services.tenant_service import TenantService
+from app.services.factory import get_tenant_service
 
 router = APIRouter(
     prefix='/admin',
@@ -14,7 +14,7 @@ class TenantCreateSchema(BaseModel):
     
 @router.post('/create-pyme')
 async def create_new_pyme(pyme: TenantCreateSchema):
-    service = TenantService()
+    service = get_tenant_service()
     
     try:
         result = service.create_tenant(pyme.nombre_negocio, pyme.tipo_negocio, pyme.admin_telegram_id)

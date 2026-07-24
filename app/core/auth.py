@@ -53,7 +53,7 @@ async def get_current_tenant(
     original_token = None
     tenant_id = None
 
-    # Path 1: JWT from Authorization header — no Google Sheets call needed for tenant_id
+    # Path 1: JWT from Authorization header — no DB call needed for tenant_id
     if authorization and authorization.startswith("Bearer "):
         jwt_token = authorization.replace("Bearer ", "")
         payload = decode_token(jwt_token)
@@ -68,41 +68,48 @@ async def get_current_tenant(
     if not original_token:
         raise HTTPException(status_code=401, detail="Autenticacion requerida (JWT o token)")
 
-    # Look up sheet_id + pyme_name from cache or Google Sheets
+    # Look up sheet_id + pyme_name from cache or DB
     cache_key = f"tenant_info:{original_token}"
 
     cached = get_cache(cache_key, ttl=300)
-    if cached and cached.get("sheet_id"):
+    if cached and (cached.get("sheet_id") or cached.get("tenant_id")):
         if not tenant_id:
             tenant_id = cached.get("tenant_id")
         return {
             "tenant_id": tenant_id,
             "token": original_token,
             "pyme_name": cached.get("pyme_name", ""),
-            "sheet_id": cached["sheet_id"],
+            "sheet_id": cached.get("sheet_id", ""),
         }
 
-    # Cache miss — hit Google Sheets
+    # Cache miss — look up in DB (SQLite or Google Sheets)
     try:
-        from app.services.tenant_service import TenantService
-        tenant_service = TenantService()
-        cell = tenant_service.admin_sheet.find(original_token)
-        if not cell:
-            raise HTTPException(status_code=401, detail="Token invalido")
-        row = tenant_service.admin_sheet.row_values(cell.row)
+        from app.services.factory import get_tenant_service
+        tenant_service = get_tenant_service()
 
-        tenant_id = tenant_id or row[1]
-        info = {
-            "tenant_id": tenant_id,
-            "token": original_token,
-            "pyme_name": row[2],
-            "sheet_id": row[3],
-        }
+        if settings.STORAGE_BACKEND == "sqlite":
+            info = tenant_service.validate_token(original_token)
+            if not info:
+                raise HTTPException(status_code=401, detail="Token invalido")
+        else:
+            cell = tenant_service.admin_sheet.find(original_token)
+            if not cell:
+                raise HTTPException(status_code=401, detail="Token invalido")
+            row = tenant_service.admin_sheet.row_values(cell.row)
+            info = {
+                "tenant_id": row[1],
+                "token": original_token,
+                "pyme_name": row[2],
+                "sheet_id": row[3],
+            }
+
+        tenant_id = tenant_id or info["tenant_id"]
+        info["tenant_id"] = tenant_id
         set_cache(cache_key, info, ttl=300)
         return info
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error buscando tenant en Google Sheets: {e}")
+        logger.error(f"Error buscando tenant: {e}")
         raise HTTPException(status_code=503, detail="Servicio temporalmente no disponible")

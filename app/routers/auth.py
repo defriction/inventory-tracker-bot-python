@@ -3,8 +3,9 @@ Auth router — login endpoint that validates token and returns JWT.
 """
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from app.services.tenant_service import TenantService
+from app.core.config import settings
 from app.core.auth import create_token
+from app.services.factory import get_tenant_service
 
 router = APIRouter(prefix='/api/auth', tags=['Autenticacion'])
 
@@ -21,7 +22,7 @@ class LoginResponse(BaseModel):
 
 @router.post('/login', response_model=LoginResponse)
 def login(data: LoginRequest):
-    """Validate token against Google Sheets, return JWT for session."""
+    """Validate token, return JWT for session."""
     # Admin bypass
     if data.token == '3HF784F':
         return LoginResponse(
@@ -31,12 +32,20 @@ def login(data: LoginRequest):
         )
 
     try:
-        tenant_service = TenantService()
-        cell = tenant_service.admin_sheet.find(data.token)
-        if not cell:
-            raise HTTPException(status_code=401, detail="Token invalido")
-        row = tenant_service.admin_sheet.row_values(cell.row)
-        tenant_id = row[1]
+        tenant_service = get_tenant_service()
+
+        if settings.STORAGE_BACKEND == "sqlite":
+            info = tenant_service.validate_token(data.token)
+            if not info:
+                raise HTTPException(status_code=401, detail="Token invalido")
+            tenant_id = info["tenant_id"]
+        else:
+            cell = tenant_service.admin_sheet.find(data.token)
+            if not cell:
+                raise HTTPException(status_code=401, detail="Token invalido")
+            row = tenant_service.admin_sheet.row_values(cell.row)
+            tenant_id = row[1]
+
     except HTTPException:
         raise
     except Exception as e:
