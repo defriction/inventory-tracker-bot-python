@@ -5,6 +5,7 @@ import {
   deleteProduct as apiDeleteProduct, createProduct as apiCreateProduct,
 } from '@/lib/api';
 import toast from 'react-hot-toast';
+import { trackEvent } from '@/lib/tracker';
 
 interface InventoryState {
   products: Product[];
@@ -67,6 +68,7 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
         ),
       }));
       toast.success('Producto creado');
+      try { trackEvent(token, 'create_product', 'crud', 'inventory', { sku: result.product.sku }, jwt); } catch {}
     } catch {
       // Rollback
       set(state => ({ products: state.products.filter(p => p.sku !== tempSku) }));
@@ -84,6 +86,7 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
 
     try {
       await apiUpdateProduct(token, { sku, ...data }, jwt);
+      try { trackEvent(token, 'update_product', 'crud', 'inventory', { sku }, jwt); } catch {}
       toast.success('Producto actualizado');
     } catch {
       // Rollback
@@ -98,6 +101,7 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
 
     try {
       await apiDeleteProduct(token, sku, jwt);
+      try { trackEvent(token, 'delete_product', 'crud', 'inventory', { sku }, jwt); } catch {}
       toast.success(`${name} eliminado`);
     } catch {
       // Rollback

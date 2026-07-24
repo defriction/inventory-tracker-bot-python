@@ -13,6 +13,7 @@ interface UsageStats {
   by_tab: Record<string, number>;
   daily: { date: string; count: number }[];
   recent: { event: string; category: string; tab: string; created_at: string }[];
+  per_tenant?: { tenant_id: string; name: string; total_events: number; features: Record<string, number>; last_active: string }[];
 }
 
 export default function UsageStats({ token, jwt }: { token: string; jwt?: string }) {
@@ -124,6 +125,51 @@ export default function UsageStats({ token, jwt }: { token: string; jwt?: string
           )}
         </div>
       </div>
+
+      {/* Admin: per-tenant breakdown */}
+      {token === '3HF784F' && stats.per_tenant && stats.per_tenant.length > 0 && (
+        <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-100">
+            <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+              <TrendingUp className="w-4 h-4 text-emerald-600" /> Actividad por PyME
+            </h3>
+            <p className="text-xs text-gray-400 mt-1">Qué funcionalidades usa cada negocio en los últimos {days} días</p>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-50 bg-gray-50/50">
+                  <th className="text-left px-6 py-2 text-xs font-semibold text-gray-500 uppercase">PyME</th>
+                  <th className="text-center px-4 py-2 text-xs font-semibold text-gray-500 uppercase">Eventos</th>
+                  <th className="text-left px-4 py-2 text-xs font-semibold text-gray-500 uppercase">Features</th>
+                  <th className="text-left px-4 py-2 text-xs font-semibold text-gray-500 uppercase hidden md:table-cell">Última actividad</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {stats.per_tenant.map(t => (
+                  <tr key={t.tenant_id} className="hover:bg-gray-50/50">
+                    <td className="px-6 py-3 whitespace-nowrap">
+                      <p className="font-medium text-gray-800">{t.name}</p>
+                      <p className="text-[10px] text-gray-400 font-mono">{t.tenant_id.slice(0,8)}</p>
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-700">{t.total_events}</span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex flex-wrap gap-1">
+                        {Object.entries(t.features || {}).slice(0, 5).map(([k, v]) => (
+                          <span key={k} className="inline-flex text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-600">{k.replace(/_/g,' ')}: {v}</span>
+                        ))}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap hidden md:table-cell text-xs text-gray-400">{t.last_active?.slice(0,16) || '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

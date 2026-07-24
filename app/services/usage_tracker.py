@@ -2,7 +2,6 @@
 Usage Analytics — tracks user behavior to improve product.
 Stores events in SQLite per tenant.
 """
-
 import sqlite3
 import os
 import json
@@ -50,13 +49,11 @@ class UsageTracker:
 
     def stats(self, days: int = 30) -> dict:
         with self._conn() as conn:
-            # Total events
             total = conn.execute(
                 "SELECT COUNT(*) FROM events WHERE created_at >= datetime('now','localtime',?)",
                 (f"-{days} days",)
             ).fetchone()[0]
 
-            # By event
             by_event = {}
             for row in conn.execute(
                 "SELECT event, COUNT(*) c FROM events WHERE created_at >= datetime('now','localtime',?) GROUP BY event ORDER BY c DESC LIMIT 20",
@@ -64,7 +61,6 @@ class UsageTracker:
             ).fetchall():
                 by_event[row["event"]] = row["c"]
 
-            # By category
             by_category = {}
             for row in conn.execute(
                 "SELECT category, COUNT(*) c FROM events WHERE created_at >= datetime('now','localtime',?) GROUP BY category",
@@ -72,7 +68,6 @@ class UsageTracker:
             ).fetchall():
                 by_category[row["category"]] = row["c"]
 
-            # By tab
             by_tab = {}
             for row in conn.execute(
                 "SELECT tab, COUNT(*) c FROM events WHERE tab != '' AND created_at >= datetime('now','localtime',?) GROUP BY tab ORDER BY c DESC",
@@ -80,7 +75,6 @@ class UsageTracker:
             ).fetchall():
                 by_tab[row["tab"]] = row["c"]
 
-            # Daily activity
             daily = []
             for row in conn.execute(
                 "SELECT date(created_at) d, COUNT(*) c FROM events WHERE created_at >= datetime('now','localtime',?) GROUP BY d ORDER BY d",
@@ -88,7 +82,6 @@ class UsageTracker:
             ).fetchall():
                 daily.append({"date": row["d"], "count": row["c"]})
 
-            # Recent events
             recent = []
             for row in conn.execute(
                 "SELECT event, category, tab, created_at FROM events ORDER BY created_at DESC LIMIT 20"
@@ -107,4 +100,27 @@ class UsageTracker:
                 "by_tab": by_tab,
                 "daily": daily,
                 "recent": recent,
+            }
+
+    def feature_summary(self, days: int = 30) -> dict:
+        """Summary of features used by this tenant."""
+        with self._conn() as conn:
+            total = conn.execute(
+                "SELECT COUNT(*) FROM events WHERE created_at >= datetime('now','localtime',?)",
+                (f"-{days} days",)
+            ).fetchone()[0]
+
+            by_event = dict(conn.execute(
+                "SELECT event, COUNT(*) c FROM events WHERE created_at >= datetime('now','localtime',?) GROUP BY event",
+                (f"-{days} days",)
+            ).fetchall())
+
+            last_active = conn.execute(
+                "SELECT MAX(created_at) FROM events"
+            ).fetchone()[0] or ""
+
+            return {
+                "total": total,
+                "by_event": {k: v for k, v in by_event},
+                "last_active": last_active,
             }
