@@ -77,17 +77,22 @@ async def create_product(
     inventory_service: InventoryService = Depends(get_inventory_service)
 ):
     """Crea un nuevo producto en el inventario."""
+    import logging
+    log = logging.getLogger('crud.product')
     try:
         import uuid
         new_uuid = str(uuid.uuid4())[:8]
         sku = data.sku or f"GEN-{new_uuid[:4].upper()}"
+        log.info(f"CREATE | sku={sku} | name={data.name} | stock={data.stock}")
         row = [new_uuid, sku, data.name, data.category, data.stock, data.unit,
                data.cost, data.price, data.expiration_date, data.location,
                data.invima, data.lote]
         inventory_service.inventory_sheet.append_row(row)
         inventory_service._log_movement("CREACION", sku, data.name, data.stock, "Admin", "Creacion manual")
+        log.info(f"CREATE OK | sku={sku} | uuid={new_uuid}")
         return {"status": "created", "sku": sku, "uuid": new_uuid}
     except Exception as e:
+        log.error(f"CREATE FAIL | {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 async def get_inventory(
     token: str = Query(...),
@@ -164,6 +169,8 @@ async def get_product(
     except HTTPException:
         raise
     except Exception as e:
+        import traceback, logging
+        logging.getLogger('crud.product').error(f"CRUD FAIL | {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.patch('/products/{sku}')
@@ -197,12 +204,14 @@ async def update_product(
         }
         
         update_data = updates.dict(exclude_unset=True)
+        log.info(f"UPDATE FIELDS | sku={sku} | row={row_idx} | changes={list(update_data.keys())}")
         
         for field, value in update_data.items():
             if field in field_to_col and value is not None:
                 col = field_to_col[field]
                 inventory_service.inventory_sheet.update_cell(row_idx, col, value)
         
+        log.info(f"UPDATE OK | sku={sku}")
         return {"status": "updated", "sku": sku, "changes": list(update_data.keys())}
         
     except HTTPException:
@@ -230,6 +239,8 @@ async def delete_product(
     except HTTPException:
         raise
     except Exception as e:
+        import traceback, logging
+        logging.getLogger('crud.product').error(f"CRUD FAIL | {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get('/movements')
@@ -274,6 +285,8 @@ async def get_movements(
         return result
         
     except Exception as e:
+        import traceback, logging
+        logging.getLogger('crud.product').error(f"CRUD FAIL | {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get('/stats')
@@ -324,6 +337,8 @@ async def get_stats(
         set_cache(cache_key, result, ttl=30)
         return result
     except Exception as e:
+        import traceback, logging
+        logging.getLogger('crud.product').error(f"CRUD FAIL | {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -374,6 +389,8 @@ async def get_alerts(
         set_cache(cache_key, result, ttl=30)
         return result
     except Exception as e:
+        import traceback, logging
+        logging.getLogger('crud.product').error(f"CRUD FAIL | {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -580,6 +597,8 @@ async def get_analytics(
         return result
 
     except Exception as e:
+        import traceback, logging
+        logging.getLogger('crud.product').error(f"CRUD FAIL | {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
