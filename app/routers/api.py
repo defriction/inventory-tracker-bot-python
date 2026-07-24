@@ -1020,7 +1020,6 @@ async def create_remision(
     inventory_service: InventoryService = Depends(get_inventory_service)
 ):
     """Crea una remision y descuenta stock del inventario."""
-    print("DEBUG create_remision called", flush=True)
     from app.database_sa import get_session
     from app.models import Remision, RemisionItem, Client
     session = get_session(inventory_service.tenant_id)
