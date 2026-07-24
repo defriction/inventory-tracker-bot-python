@@ -49,9 +49,12 @@ def get_admin_stats(days: int = Query(30, ge=1, le=90)):
         "per_tenant": [],
     }
 
-    ts = TenantService()
-    tenants = ts.list_tenants()
-    tenant_names = {t.get("id"): t.get("pyme_name", t.get("id", "")) for t in tenants}
+    try:
+        ts = TenantService()
+        tenants = ts.list_all()
+        tenant_names = {t.get("id"): t.get("pyme_name", t.get("id", "")) for t in tenants}
+    except Exception:
+        tenant_names = {}
 
     for db_file in glob.glob(os.path.join("/app/data", "usage_*.db")):
         try:
