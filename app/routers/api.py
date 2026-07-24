@@ -357,9 +357,18 @@ async def get_stats(
         result = {
             "total_products": total_products,
             "total_stock_value": round(total_stock_value, 2),
+            "total_value": round(total_stock_value, 2),
             "low_stock_count": low_stock_count,
             "expiring_count": expiring_count,
         }
+        # Count clients
+        try:
+            from app.database_sa import get_session
+            from app.models import Client
+            s = get_session(inventory_service.tenant_id)
+            result["total_clients"] = s.query(Client).count()
+            s.close()
+        except: pass
         return result
     except Exception as e:
         import traceback, logging
