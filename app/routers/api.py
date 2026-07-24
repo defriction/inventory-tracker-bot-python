@@ -1020,6 +1020,9 @@ async def create_remision(
     inventory_service: InventoryService = Depends(get_inventory_service)
 ):
     """Crea una remision y descuenta stock del inventario."""
+    import uuid as _uuid_mod
+    uid = _uuid_mod.uuid4().hex[:8].upper()
+    
     from app.database_sa import get_session
     from app.models import Remision, RemisionItem, Client
     session = get_session(inventory_service.tenant_id)
@@ -1038,47 +1041,41 @@ async def create_remision(
             if current_stock < item.quantity:
                 raise HTTPException(status_code=400, detail=f"Stock insuficiente para {item.product_name}")
 
-        # Create remision
         total = sum(i.quantity * i.unit_price for i in data.items)
-        remision = Remision(
-            client_id=data.client_id,
-            notes=data.notes,
-            total_amount=total,
-            created_by="Web"
-        )
+
+        # Create remision + items via SA
+        remision = Remision(client_id=data.client_id, notes=data.notes, total_amount=total, created_by="Web", uid=uid)
         session.add(remision)
         session.flush()
 
-        # Create items
         for item in data.items:
             ri = RemisionItem(
-                remision_id=remision.id,
-                product_sku=item.product_sku,
-                product_name=item.product_name,
-                quantity=item.quantity,
-                unit=item.unit,
-                unit_price=item.unit_price,
-                subtotal=item.quantity * item.unit_price
+                remision_id=remision.id, product_sku=item.product_sku, product_name=item.product_name,
+                quantity=item.quantity, unit=item.unit, unit_price=item.unit_price, subtotal=item.quantity * item.unit_price
             )
             session.add(ri)
 
         session.commit()
-        session.close()
-
-        # Deduct stock (after SA commit to release write lock)
-        for item in data.items:
-            row_idx, _ = inventory_service._find_product_row_by_keyword(item.product_sku, exact_match=True)
-            current_stock = int(inventory_service.inventory_sheet.cell(row_idx, 5).value or 0)
-            inventory_service.inventory_sheet.update_cell(row_idx, 5, current_stock - item.quantity)
-            inventory_service._log_movement("REMISION", item.product_sku, item.product_name,
-                                            -item.quantity, "Web", f"Remision {remision.uid}")
-
-        return {"status": "created", "id": remision.id, "uid": remision.uid}
     except HTTPException:
         raise
     except Exception as e:
         try: session.rollback()
         except: pass
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
         try: session.close()
         except: pass
-        raise HTTPException(status_code=500, detail=str(e))
+        try: session.bind.dispose()
+        except: pass
+
+    # Deduct stock — separate connection, after SA fully released
+    import time
+    time.sleep(0.1)
+    for item in data.items:
+        row_idx, _ = inventory_service._find_product_row_by_keyword(item.product_sku, exact_match=True)
+        current_stock = int(inventory_service.inventory_sheet.cell(row_idx, 5).value or 0)
+        inventory_service.inventory_sheet.update_cell(row_idx, 5, current_stock - item.quantity)
+        inventory_service._log_movement("REMISION", item.product_sku, item.product_name,
+                                        -item.quantity, "Web", f"Remision {uid}")
+
+    return {"status": "created", "id": remision.id, "uid": uid}
