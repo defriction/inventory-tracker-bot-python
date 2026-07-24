@@ -29,6 +29,7 @@ export default function InventoryTable({ token, jwt }: { token: string; jwt?: st
   const [saving, setSaving] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const [newProduct, setNewProduct] = useState({ name: '', category: 'General', stock: 0, unit: 'UND', cost: 0, price: 0, expiration_date: '', location: '', invima: '', lote: '', sku: '' });
+  const [highlightSku, setHighlightSku] = useState('');
 
   useEffect(() => {
     const fetchData = () => {
@@ -83,18 +84,42 @@ export default function InventoryTable({ token, jwt }: { token: string; jwt?: st
   const handleCreate = async () => {
     if (!newProduct.name) return;
     setSaving(true);
+    const tempSku = newProduct.sku || 'NUEVO-' + Date.now().toString(36);
+    // Optimistic: add to list immediately
+    const optimistic: Product = {
+      uuid: 'temp-' + Date.now(),
+      sku: tempSku,
+      name: newProduct.name,
+      category: newProduct.category,
+      stock: newProduct.stock,
+      unit: newProduct.unit,
+      cost: newProduct.cost,
+      price: newProduct.price,
+      expiration_date: newProduct.expiration_date,
+      location: newProduct.location,
+      invima: newProduct.invima,
+      lote: newProduct.lote,
+    };
+    setProducts(prev => [optimistic, ...prev]);
+    setHighlightSku(tempSku);
+    setShowCreate(false);
+    setNewProduct({ name: '', category: 'General', stock: 0, unit: 'UND', cost: 0, price: 0, expiration_date: '', location: '', invima: '', lote: '', sku: '' });
+    setSearch('');
+    setCategoryFilter('');
+    setStockFilter('');
+    setPage(1);
     try {
       await createProduct(token, newProduct, jwt);
-      setShowCreate(false);
-      setNewProduct({ name: '', category: 'General', stock: 0, unit: 'UND', cost: 0, price: 0, expiration_date: '', location: '', invima: '', lote: '', sku: '' });
-      setSearch('');
-      setCategoryFilter('');
-      setStockFilter('');
-      setPage(1);
-      fetchData();
+      fetchData(); // Replace optimistic with real data
       toast.success('Producto creado');
-    } catch { toast.error('Error al crear'); }
-    finally { setSaving(false); }
+    } catch {
+      toast.error('Error al crear');
+      fetchData(); // Remove optimistic on failure
+    }
+    finally {
+      setSaving(false);
+      setTimeout(() => setHighlightSku(''), 2000);
+    }
   };
 
   // Extraer categorias unicas
@@ -332,7 +357,7 @@ export default function InventoryTable({ token, jwt }: { token: string; jwt?: st
           </thead>
           <tbody className="divide-y divide-gray-50">
             {paginated.map((product) => (
-              <tr key={product.uuid} className="hover:bg-gray-50/70 transition-colors">
+              <tr key={product.uuid} className={`hover:bg-gray-50/70 transition-colors ${highlightSku === product.sku ? 'animate-pulse bg-indigo-50 ring-2 ring-indigo-300' : ''}`}>
                 <td className="px-6 py-3.5 whitespace-nowrap">
                   <code className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
                     {product.sku}
