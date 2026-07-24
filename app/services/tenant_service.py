@@ -87,6 +87,7 @@ class TenantService:
                     row = self.admin_sheet.row_values(i + 1) # i+1 porque gspread es 1-based
                     if len(row) > 4: # Aseguramos que la fila tenga datos
                         return {
+                            "tenant_id": row[1],
                             "pyme_name": row[2], 
                             "sheet_id": row[3],
                             "token": row[4]

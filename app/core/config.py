@@ -16,6 +16,9 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str = "HS256"
     JWT_EXPIRE_DAYS: int = 7
 
+    # --- Storage Backend ---
+    STORAGE_BACKEND: str = "gsheets"  # "gsheets" or "sqlite"
+
     # --- WHATSAPP (Opcional) ---
     WHATSAPP_SERVER_URL: str = ""
     WHATSAPP_API_KEY: str = ""

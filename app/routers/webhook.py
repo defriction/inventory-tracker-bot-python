@@ -4,7 +4,7 @@ import sys
 from fastapi import APIRouter, Request, BackgroundTasks
 from app.core.config import settings
 from app.services.tenant_service import TenantService
-from app.services.inventory_service import InventoryService
+from app.services.factory import get_inventory_service
 from app.services.ia_service import interpret_intent
 
 logger = logging.getLogger(__name__)
@@ -145,7 +145,10 @@ async def process_telegram_update(data: dict):
 
         # Flujo B: usuario registrado (negocio activo)
 
-        inventory_service = InventoryService(sheet_id=tenant['sheet_id'])
+        inventory_service = get_inventory_service(
+            sheet_id=tenant['sheet_id'],
+            tenant_id=tenant['tenant_id']
+        )
 
         # Verificar si el usuario esta resolviendo un multi-match pendiente
         pending = pending_resolution.get(str(user_id))

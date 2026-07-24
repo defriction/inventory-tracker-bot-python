@@ -4,6 +4,7 @@ from typing import Optional, List
 import datetime
 from app.services.inventory_service import InventoryService
 from app.services.analytics_service import AnalyticsService
+from app.services.factory import get_inventory_service
 from app.core.config import settings
 from app.core.cache import get_cache, set_cache
 from app.core.auth import get_current_tenant
@@ -59,7 +60,10 @@ class MovementSchema(BaseModel):
 
 def get_inventory_service(tenant: dict = Depends(get_current_tenant)):
     """Retorna InventoryService conectado al sheet del tenant"""
-    return InventoryService(sheet_id=tenant['sheet_id'])
+    return get_inventory_service(
+        sheet_id=tenant.get('sheet_id', ''),
+        tenant_id=tenant.get('tenant_id', '')
+    )
 
 # --- Endpoints ---
 
