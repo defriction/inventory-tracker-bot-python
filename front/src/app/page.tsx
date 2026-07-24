@@ -49,6 +49,7 @@ export default function Home() {
     setJwt(storedJwt);
     setIsAuthenticated(storedAuth);
     setHydrated(true);
+    if (storedToken === '3HF784F') setActiveTab('admin');
   }, []);
 
   useEffect(() => {
@@ -81,6 +82,7 @@ export default function Home() {
     setError('');
     if (t === '3HF784F') {
       setIsAuthenticated(true);
+      setActiveTab('admin');
       localStorage.setItem('inventory_token', t);
       localStorage.setItem('inventory_auth', 'true');
       setLoading(false);
