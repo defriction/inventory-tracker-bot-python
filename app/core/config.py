@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     JWT_EXPIRE_DAYS: int = 7
 
     # --- Storage Backend ---
-    STORAGE_BACKEND: str = "gsheets"  # "gsheets" or "sqlite"
+    STORAGE_BACKEND: str = "sqlite"  # "sqlite" or "gsheets"
 
     # --- WHATSAPP (Opcional) ---
     WHATSAPP_SERVER_URL: str = ""
