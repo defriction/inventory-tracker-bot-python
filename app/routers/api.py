@@ -46,6 +46,7 @@ class ProductUpdateSchema(BaseModel):
 class InventoryResponse(BaseModel):
     products: List[ProductSchema]
     total: int
+    custom_columns: Optional[list] = None
 
 class MovementSchema(BaseModel):
     timestamp: str
