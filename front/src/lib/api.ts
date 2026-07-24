@@ -1,5 +1,3 @@
-import { Product, InventoryResponse, Stats, AlertsResponse, MovementsResponse, AnalyticsResponse } from '@/types';
-
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
 function authHeaders(jwt?: string, extra?: Record<string, string>): Record<string, string> {
@@ -8,8 +6,21 @@ function authHeaders(jwt?: string, extra?: Record<string, string>): Record<strin
   return headers;
 }
 
+/** Retry fetch on 5xx errors with exponential backoff. Max 2 retries. */
+async function fetchWithRetry(url: string, options: RequestInit = {}, retries = 2): Promise<Response> {
+  for (let i = 0; i <= retries; i++) {
+    const res = await fetch(url, options);
+    if (res.ok || res.status < 500 || i === retries) return res;
+    await new Promise(r => setTimeout(r, 200 * (i + 1)));
+  }
+  // Unreachable, but TypeScript needs it
+  return fetch(url, options);
+}
+
+import { Product, InventoryResponse, Stats, AlertsResponse, MovementsResponse, AnalyticsResponse } from '@/types';
+
 export async function getInventory(tenantToken: string, jwt?: string): Promise<InventoryResponse> {
-  const res = await fetch(`${API_URL}/api/inventory?token=${tenantToken}`, {
+  const res = await fetchWithRetry(`${API_URL}/api/inventory?token=${tenantToken}`, {
     cache: 'no-store',
     headers: authHeaders(jwt),
   });
@@ -18,7 +29,7 @@ export async function getInventory(tenantToken: string, jwt?: string): Promise<I
 }
 
 export async function updateProduct(token: string, product: Partial<Product>, jwt?: string): Promise<Product> {
-  const res = await fetch(`${API_URL}/api/products/${product.sku}?token=${token}`, {
+  const res = await fetchWithRetry(`${API_URL}/api/products/${product.sku}?token=${token}`, {
     method: 'PATCH',
     headers: authHeaders(jwt, { 'Content-Type': 'application/json' }),
     body: JSON.stringify(product),
@@ -28,7 +39,7 @@ export async function updateProduct(token: string, product: Partial<Product>, jw
 }
 
 export async function deleteProduct(token: string, sku: string, jwt?: string): Promise<void> {
-  const res = await fetch(`${API_URL}/api/products/${sku}?token=${token}`, {
+  const res = await fetchWithRetry(`${API_URL}/api/products/${sku}?token=${token}`, {
     method: 'DELETE',
     headers: authHeaders(jwt),
   });
@@ -36,7 +47,7 @@ export async function deleteProduct(token: string, sku: string, jwt?: string): P
 }
 
 export async function createProduct(token: string, product: Partial<Product>, jwt?: string): Promise<Product> {
-  const res = await fetch(`${API_URL}/api/products?token=${token}`, {
+  const res = await fetchWithRetry(`${API_URL}/api/products?token=${token}`, {
     method: 'POST',
     headers: authHeaders(jwt, { 'Content-Type': 'application/json' }),
     body: JSON.stringify(product),
@@ -46,7 +57,7 @@ export async function createProduct(token: string, product: Partial<Product>, jw
 }
 
 export async function getStats(token: string, jwt?: string): Promise<Stats> {
-  const res = await fetch(`${API_URL}/api/stats?token=${token}`, {
+  const res = await fetchWithRetry(`${API_URL}/api/stats?token=${token}`, {
     cache: 'no-store',
     headers: authHeaders(jwt),
   });
@@ -55,7 +66,7 @@ export async function getStats(token: string, jwt?: string): Promise<Stats> {
 }
 
 export async function getAlerts(token: string, jwt?: string): Promise<AlertsResponse> {
-  const res = await fetch(`${API_URL}/api/alerts?token=${token}`, {
+  const res = await fetchWithRetry(`${API_URL}/api/alerts?token=${token}`, {
     cache: 'no-store',
     headers: authHeaders(jwt),
   });
@@ -64,7 +75,7 @@ export async function getAlerts(token: string, jwt?: string): Promise<AlertsResp
 }
 
 export async function getMovements(token: string, limit = 10, jwt?: string): Promise<MovementsResponse> {
-  const res = await fetch(`${API_URL}/api/movements?token=${token}&limit=${limit}`, {
+  const res = await fetchWithRetry(`${API_URL}/api/movements?token=${token}&limit=${limit}`, {
     cache: 'no-store',
     headers: authHeaders(jwt),
   });
@@ -73,7 +84,7 @@ export async function getMovements(token: string, limit = 10, jwt?: string): Pro
 }
 
 export async function getAnalytics(token: string, jwt?: string): Promise<AnalyticsResponse> {
-  const res = await fetch(`${API_URL}/api/analytics?token=${token}`, {
+  const res = await fetchWithRetry(`${API_URL}/api/analytics?token=${token}`, {
     cache: 'no-store',
     headers: authHeaders(jwt),
   });
