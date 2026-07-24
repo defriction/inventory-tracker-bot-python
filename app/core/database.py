@@ -1,37 +1,65 @@
 """
 SQLite database manager — one DB file per tenant + one admin DB.
-Uses connection pooling: reuses open connections instead of opening/closing per request.
+Connection pool: reuses open connections instead of opening/closing per request.
 """
 import sqlite3
 import os
+import logging
 from contextlib import contextmanager
 from threading import Lock
+from typing import Optional
+
+logger = logging.getLogger(__name__)
 
 DB_DIR = "/app/data"
 os.makedirs(DB_DIR, exist_ok=True)
 
 ADMIN_DB = os.path.join(DB_DIR, "admin.db")
 
-_pool: dict[str, sqlite3.Connection] = {}
-_pool_lock = Lock()
 
+class ConnectionPool:
+    """Pool of SQLite connections, one per database file. Thread-safe."""
 
-def _get_pooled_conn(db_path: str) -> sqlite3.Connection:
-    """Get a cached connection or create a new one."""
-    with _pool_lock:
-        if db_path in _pool:
-            try:
-                _pool[db_path].execute("SELECT 1")
-                return _pool[db_path]
-            except Exception:
-                pass  # Connection dead, recreate
+    def __init__(self):
+        self._connections: dict[str, sqlite3.Connection] = {}
+        self._lock = Lock()
+
+    def get(self, db_path: str) -> sqlite3.Connection:
+        """Return a healthy connection for db_path, reusing or creating one."""
+        with self._lock:
+            conn = self._connections.get(db_path)
+            if conn is not None:
+                try:
+                    conn.execute("SELECT 1")
+                    return conn
+                except Exception:
+                    logger.warning(f"Dead connection for {db_path}, recreating")
+            conn = self._create_connection(db_path)
+            self._connections[db_path] = conn
+            return conn
+
+    def _create_connection(self, db_path: str) -> sqlite3.Connection:
         conn = sqlite3.connect(db_path, check_same_thread=False)
         conn.row_factory = sqlite3.Row
         conn.execute("PRAGMA journal_mode=WAL")
         conn.execute("PRAGMA foreign_keys=ON")
         conn.execute("PRAGMA busy_timeout=5000")
-        _pool[db_path] = conn
         return conn
+
+    def close_all(self):
+        """Close all pooled connections gracefully."""
+        with self._lock:
+            for path, conn in self._connections.items():
+                try:
+                    conn.close()
+                except Exception:
+                    pass
+            self._connections.clear()
+
+
+# Module-level pool — singleton for SQLite is acceptable
+# (one pool per process, shared across all requests)
+_pool = ConnectionPool()
 
 
 def get_db_path(tenant_id: str) -> str:
@@ -40,9 +68,9 @@ def get_db_path(tenant_id: str) -> str:
 
 @contextmanager
 def get_conn(tenant_id: str):
-    """Yields a pooled SQLite connection for the tenant. Commits on exit."""
+    """Yields a pooled SQLite connection for the tenant. Commits on success, rollbacks on error."""
     db_path = get_db_path(tenant_id)
-    conn = _get_pooled_conn(db_path)
+    conn = _pool.get(db_path)
     try:
         yield conn
         conn.commit()
@@ -53,8 +81,8 @@ def get_conn(tenant_id: str):
 
 @contextmanager
 def get_admin_conn():
-    """Yields a pooled SQLite connection for the admin DB. Commits on exit."""
-    conn = _get_pooled_conn(ADMIN_DB)
+    """Yields a pooled SQLite connection for the admin DB."""
+    conn = _pool.get(ADMIN_DB)
     try:
         yield conn
         conn.commit()
@@ -65,9 +93,7 @@ def get_admin_conn():
 
 def init_admin_db():
     """Create admin tables if they don't exist."""
-    db_path = ADMIN_DB
-    os.makedirs(os.path.dirname(db_path), exist_ok=True)
-    conn = _get_pooled_conn(db_path)
+    conn = _pool.get(ADMIN_DB)
     conn.execute("""
         CREATE TABLE IF NOT EXISTS tenants (
             id TEXT PRIMARY KEY,
@@ -90,8 +116,7 @@ def init_admin_db():
 def init_tenant_db(tenant_id: str):
     """Create tenant-specific tables (products + movements) if they don't exist."""
     db_path = get_db_path(tenant_id)
-    os.makedirs(os.path.dirname(db_path), exist_ok=True)
-    conn = _get_pooled_conn(db_path)
+    conn = _pool.get(db_path)
     conn.execute("""
         CREATE TABLE IF NOT EXISTS products (
             uuid TEXT, sku TEXT, name TEXT, category TEXT, stock INTEGER, unit TEXT,
