@@ -94,45 +94,11 @@ export default function MyBusiness({ token, jwt }: { token: string; jwt?: string
               </>
             )}
           </div>
-          {!editing ? (
-            <button onClick={startEdit}
-              className="px-3 py-1.5 text-xs font-medium text-indigo-600 bg-indigo-50 rounded-lg hover:bg-indigo-100 flex items-center gap-1">
-              <Edit3 className="w-3 h-3" /> Editar
-            </button>
-          ) : (
-            <span className="px-3 py-1 bg-indigo-100 text-indigo-700 text-xs font-medium rounded-full">Token: {token.slice(0, 6)}</span>
-          )}
+          <button onClick={startEdit}
+            className="px-3 py-1.5 text-xs font-medium text-indigo-600 bg-indigo-50 rounded-lg hover:bg-indigo-100 flex items-center gap-1">
+            <Edit3 className="w-3 h-3" /> Editar
+          </button>
         </div>
-        {editing && (
-          <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 space-y-2">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              <input type="text" placeholder="Nombre del negocio" value={editForm.pyme_name}
-                onChange={e => setEditForm({...editForm, pyme_name: e.target.value})}
-                className="px-3 py-1.5 border border-gray-200 rounded-lg text-xs" />
-              <input type="text" placeholder="Tipo de negocio" value={editForm.business_type}
-                onChange={e => setEditForm({...editForm, business_type: e.target.value})}
-                className="px-3 py-1.5 border border-gray-200 rounded-lg text-xs" />
-              <input type="text" placeholder="NIT" value={editForm.nit}
-                onChange={e => setEditForm({...editForm, nit: e.target.value})}
-                className="px-3 py-1.5 border border-gray-200 rounded-lg text-xs" />
-              <input type="text" placeholder="Dirección" value={editForm.address}
-                onChange={e => setEditForm({...editForm, address: e.target.value})}
-                className="px-3 py-1.5 border border-gray-200 rounded-lg text-xs" />
-            </div>
-            <input type="text" placeholder="Descripción" value={editForm.description}
-              onChange={e => setEditForm({...editForm, description: e.target.value})}
-              className="w-full px-3 py-1.5 border border-gray-200 rounded-lg text-xs" />
-            <div className="flex gap-2 justify-end">
-              <button onClick={cancelEdit} className="px-3 py-1.5 text-xs text-gray-500 hover:bg-gray-100 rounded-lg flex items-center gap-1">
-                <XIcon className="w-3 h-3" /> Cancelar
-              </button>
-              <button onClick={saveProfile} disabled={savingProfile}
-                className="px-3 py-1.5 text-xs font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-500 disabled:opacity-40 flex items-center gap-1">
-                <Check className="w-3 h-3" /> {savingProfile ? 'Guardando...' : 'Guardar'}
-              </button>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* KPI Grid */}
@@ -256,6 +222,48 @@ export default function MyBusiness({ token, jwt }: { token: string; jwt?: string
           </div>
         )}
       </div>
+
+      {/* Edit Profile Modal */}
+      {editing && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={cancelEdit} />
+          <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-md p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-base font-bold text-gray-900">Editar Perfil</h3>
+              <button onClick={cancelEdit} className="text-gray-400 hover:text-gray-600">
+                <XIcon className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <input type="text" placeholder="Nombre del negocio *" value={editForm.pyme_name}
+                onChange={e => setEditForm({...editForm, pyme_name: e.target.value})}
+                className="px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-indigo-500" />
+              <input type="text" placeholder="Tipo de negocio" value={editForm.business_type}
+                onChange={e => setEditForm({...editForm, business_type: e.target.value})}
+                className="px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-indigo-500" />
+              <input type="text" placeholder="NIT" value={editForm.nit}
+                onChange={e => setEditForm({...editForm, nit: e.target.value})}
+                className="px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-indigo-500" />
+              <input type="text" placeholder="Dirección" value={editForm.address}
+                onChange={e => setEditForm({...editForm, address: e.target.value})}
+                className="px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-indigo-500" />
+            </div>
+            <input type="text" placeholder="Descripción del negocio" value={editForm.description}
+              onChange={e => setEditForm({...editForm, description: e.target.value})}
+              className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-indigo-500" />
+            <div className="flex gap-2 justify-end pt-1">
+              <button onClick={cancelEdit}
+                className="px-4 py-2 text-sm text-gray-500 hover:bg-gray-100 rounded-xl">
+                Cancelar
+              </button>
+              <button onClick={saveProfile} disabled={savingProfile}
+                className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-xl hover:bg-indigo-500 disabled:opacity-40 flex items-center gap-1.5">
+                <Check className="w-4 h-4" /> {savingProfile ? 'Guardando...' : 'Guardar Cambios'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
