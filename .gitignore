@@ -37,3 +37,4 @@ graphify-out/
 data/.graphify_*
 merge_*_inc.py
 sem*.json
+merge_*_inline.py
