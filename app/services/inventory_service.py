@@ -224,7 +224,7 @@ class InventoryService:
         with get_conn(self.tenant_id) as conn:
             product = conn.execute(
                 "SELECT rowid, sku, name FROM products WHERE rowid = ?",
-                (row_idx - 1,)
+                (row_idx,)
             ).fetchone()
             if product:
                 conn.execute("DELETE FROM products WHERE rowid = ?", (product['rowid'],))
