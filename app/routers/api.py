@@ -181,10 +181,10 @@ async def update_product(
     token: str = Query(...),
     inventory_service: InventoryService = Depends(get_inventory_service)
 ):
-    """
-    Actualiza campos de un producto existente.
-    Solo actualiza los campos enviados en el body.
-    """
+    """Actualiza campos de un producto existente.
+    Solo actualiza los campos enviados en el body."""
+    import logging
+    log = logging.getLogger('crud.product')
     try:
         row_idx, current_name = inventory_service._find_product_row_by_keyword(sku, exact_match=True)
         if not row_idx:
