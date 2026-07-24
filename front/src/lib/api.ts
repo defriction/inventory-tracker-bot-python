@@ -25,7 +25,7 @@ async function fetchWithRetry(url: string, options: RequestInit = {}, retries = 
   throw new Error('Max retries');
 }
 
-import { Product, InventoryResponse, Stats, AlertsResponse, MovementsResponse, AnalyticsResponse } from '@/types';
+import { Product, InventoryResponse, Stats, AlertsResponse, MovementsResponse, AnalyticsResponse, SuppliersResponse } from '@/types';
 
 export async function getInventory(tenantToken: string, jwt?: string): Promise<InventoryResponse> {
   const res = await fetchWithRetry(`${API_URL}/api/inventory?token=${tenantToken}`, {
@@ -89,6 +89,48 @@ export async function getMovements(token: string, limit = 10, jwt?: string): Pro
   });
   if (!res.ok) throw new Error('Error cargando movimientos');
   return res.json();
+}
+
+// ── Suppliers ──
+
+export async function getSuppliers(token: string, jwt?: string): Promise<SuppliersResponse> {
+  const res = await fetchWithRetry(`${API_URL}/api/suppliers?token=${token}`, {
+    cache: 'no-store',
+    headers: authHeaders(jwt),
+  });
+  if (!res.ok) throw new Error('Error cargando proveedores');
+  return res.json();
+}
+
+export async function createSupplier(token: string, data: any, jwt?: string): Promise<any> {
+  const res = await fetchWithRetry(`${API_URL}/api/suppliers?token=${token}`, {
+    method: 'POST',
+    cache: 'no-store',
+    headers: authHeaders(jwt, { 'Content-Type': 'application/json' }),
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error('Error creando proveedor');
+  return res.json();
+}
+
+export async function updateSupplier(token: string, id: number, data: any, jwt?: string): Promise<any> {
+  const res = await fetchWithRetry(`${API_URL}/api/suppliers/${id}?token=${token}`, {
+    method: 'PATCH',
+    cache: 'no-store',
+    headers: authHeaders(jwt, { 'Content-Type': 'application/json' }),
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error('Error actualizando proveedor');
+  return res.json();
+}
+
+export async function deleteSupplier(token: string, id: number, jwt?: string): Promise<any> {
+  const res = await fetchWithRetry(`${API_URL}/api/suppliers/${id}?token=${token}`, {
+    method: 'DELETE',
+    cache: 'no-store',
+    headers: authHeaders(jwt),
+  });
+  if (!res.ok) throw new Error('Error eliminando proveedor');
 }
 
 export async function getAnalytics(token: string, jwt?: string): Promise<AnalyticsResponse> {

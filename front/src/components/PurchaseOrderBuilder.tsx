@@ -1,10 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Search, FileText, Download, X, Plus, Minus, ShoppingCart, AlertTriangle, CheckCircle2 } from 'lucide-react';
-import { Product } from '@/types';
+import { Search, FileText, Download, X, Plus, Minus, ShoppingCart, AlertTriangle, CheckCircle2, Users } from 'lucide-react';
+import { Product, Supplier } from '@/types';
 import { getInventory } from '@/lib/api';
+import { useSupplierStore } from '@/stores/supplierStore';
 import toast from 'react-hot-toast';
+import { confirmToast } from '@/lib/confirm';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
@@ -29,11 +31,51 @@ export default function PurchaseOrderBuilder({ token, jwt }: { token: string; jw
   const [receiving, setReceiving] = useState(false);
   const [receiveMsg, setReceiveMsg] = useState('');
 
+  // Suppliers via Zustand
+  const {
+    suppliers, fetchSuppliers: loadSuppliers,
+    createSupplier: createSup, updateSupplier: updateSup, deleteSupplier: deleteSup,
+  } = useSupplierStore();
+  const [supplierPanel, setSupplierPanel] = useState(false);
+  const [supplierForm, setSupplierForm] = useState({ name: '', contact: '', phone: '', email: '', address: '', notes: '' });
+  const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
+  const [savingSupplier, setSavingSupplier] = useState(false);
+
   const refreshInventory = () => {
     getInventory(token, jwt).then(d => setProducts(d.products)).finally(() => setLoading(false));
   };
 
-  useEffect(() => { refreshInventory(); }, [token, jwt]);
+  // Supplier CRUD via Zustand
+  const handleCreateSupplier = async () => {
+    if (!supplierForm.name) return;
+    setSavingSupplier(true);
+    await createSup(token, supplierForm, jwt);
+    setSupplierForm({ name: '', contact: '', phone: '', email: '', address: '', notes: '' });
+    setSavingSupplier(false);
+  };
+
+  const handleUpdateSupplier = async () => {
+    if (!editingSupplier || !supplierForm.name) return;
+    setSavingSupplier(true);
+    await updateSup(token, editingSupplier.id, supplierForm, jwt);
+    setEditingSupplier(null);
+    setSupplierForm({ name: '', contact: '', phone: '', email: '', address: '', notes: '' });
+    setSavingSupplier(false);
+  };
+
+  const handleDeleteSupplier = async (id: number, name: string) => {
+    const ok = await confirmToast(`¿Eliminar "${name}"?`);
+    if (!ok) return;
+    await deleteSup(token, id, name, jwt);
+  };
+
+  const startEditSupplier = (s: Supplier) => {
+    setEditingSupplier(s);
+    setSupplierForm({ name: s.name, contact: s.contact, phone: s.phone, email: s.email, address: s.address, notes: s.notes });
+    setSupplierPanel(true);
+  };
+
+  useEffect(() => { refreshInventory(); loadSuppliers(token, jwt); }, [token, jwt]);
 
   const suggestQty = (stock: number): number => {
     if (stock <= 0) return 10;
@@ -137,11 +179,82 @@ export default function PurchaseOrderBuilder({ token, jwt }: { token: string; jw
             <FileText className="w-4 h-4 text-indigo-600" /> Orden de Compra
           </h3>
           <div className="grid grid-cols-2 gap-2 mt-3">
-            <input type="text" placeholder="Proveedor *" value={supplier} onChange={e => setSupplier(e.target.value)}
-              className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500" />
+            <div className="flex gap-1">
+              <select value={supplier} onChange={e => setSupplier(e.target.value)}
+                className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500 bg-white">
+                <option value="">Proveedor *</option>
+                {suppliers.map(s => (
+                  <option key={s.id} value={s.name}>{s.name}</option>
+                ))}
+              </select>
+              <button onClick={() => setSupplierPanel(!supplierPanel)}
+                className="px-2.5 py-2 border border-gray-200 rounded-lg text-gray-500 hover:bg-gray-50 text-sm"
+                title="Gestionar proveedores">
+                <Users className="w-4 h-4" />
+              </button>
+            </div>
             <input type="text" placeholder="# Orden" value={orderNumber} onChange={e => setOrderNumber(e.target.value)}
               className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500" />
           </div>
+
+          {/* Supplier Management Panel */}
+          {supplierPanel && (
+            <div className="mt-3 p-4 bg-gray-50 rounded-xl space-y-3">
+              <h4 className="text-xs font-semibold text-gray-600 flex items-center gap-1"><Users className="w-3.5 h-3.5" /> Proveedores</h4>
+              
+              {/* Existing suppliers */}
+              {suppliers.length > 0 && (
+                <div className="space-y-1 max-h-[150px] overflow-y-auto">
+                  {suppliers.map(s => (
+                    <div key={s.id} className="flex items-center justify-between bg-white px-3 py-2 rounded-lg text-sm">
+                      <div>
+                        <span className="font-medium text-gray-800">{s.name}</span>
+                        {s.contact && <span className="text-gray-400 ml-2 text-xs">{s.contact}</span>}
+                        {s.phone && <span className="text-gray-400 ml-1 text-xs">{s.phone}</span>}
+                      </div>
+                      <div className="flex gap-1">
+                        <button onClick={() => startEditSupplier(s)} className="p-1 text-gray-400 hover:text-indigo-600 rounded"><span className="text-xs">✏️</span></button>
+                        <button onClick={() => handleDeleteSupplier(s.id, s.name)} className="p-1 text-gray-400 hover:text-red-600 rounded"><span className="text-xs">🗑️</span></button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Form */}
+              <div className="space-y-2">
+                <input type="text" placeholder="Nombre del proveedor *" value={supplierForm.name}
+                  onChange={e => setSupplierForm({...supplierForm, name: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500" />
+                <div className="grid grid-cols-2 gap-2">
+                  <input type="text" placeholder="Contacto" value={supplierForm.contact}
+                    onChange={e => setSupplierForm({...supplierForm, contact: e.target.value})}
+                    className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500" />
+                  <input type="text" placeholder="Telefono" value={supplierForm.phone}
+                    onChange={e => setSupplierForm({...supplierForm, phone: e.target.value})}
+                    className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500" />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <input type="email" placeholder="Email" value={supplierForm.email}
+                    onChange={e => setSupplierForm({...supplierForm, email: e.target.value})}
+                    className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500" />
+                  <input type="text" placeholder="Direccion" value={supplierForm.address}
+                    onChange={e => setSupplierForm({...supplierForm, address: e.target.value})}
+                    className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500" />
+                </div>
+                <button
+                  onClick={editingSupplier ? handleUpdateSupplier : handleCreateSupplier}
+                  disabled={!supplierForm.name || savingSupplier}
+                  className="w-full py-2 bg-indigo-600 text-white text-sm font-semibold rounded-xl hover:bg-indigo-500 disabled:opacity-40 transition-colors">
+                  {editingSupplier ? 'Actualizar Proveedor' : 'Crear Proveedor'}
+                </button>
+                {editingSupplier && (
+                  <button onClick={() => { setEditingSupplier(null); setSupplierForm({ name: '', contact: '', phone: '', email: '', address: '', notes: '' }); }}
+                    className="w-full py-2 text-xs text-gray-500 hover:text-gray-700">Cancelar edicion</button>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         {selected.length === 0 ? (

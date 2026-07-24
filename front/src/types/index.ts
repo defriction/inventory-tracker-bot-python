@@ -284,3 +284,18 @@ export interface OrdersResponse {
   orders: Order[];
   stats: { by_status: Record<string, number> };
 }
+
+export interface Supplier {
+  id: number;
+  name: string;
+  contact: string;
+  phone: string;
+  email: string;
+  address: string;
+  notes: string;
+  created_at: string;
+}
+
+export interface SuppliersResponse {
+  suppliers: Supplier[];
+}
