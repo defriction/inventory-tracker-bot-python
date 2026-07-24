@@ -1150,3 +1150,22 @@ async def remision_pdf(
         )
     finally:
         session.close()
+
+
+@router.get('/tenant-info')
+async def get_tenant_info(
+    token: str = Query(...),
+    inventory_service: InventoryService = Depends(get_inventory_service)
+):
+    """Info de la PyME actual."""
+    from app.services.tenant_service import TenantService
+    ts = TenantService()
+    tenant = ts.validate_token(token)
+    if not tenant:
+        return {"token": token, "pyme_name": token, "business_type": "PyME"}
+    return {
+        "token": token,
+        "pyme_name": tenant.get("pyme_name", token),
+        "business_type": tenant.get("business_type", "PyME"),
+        "tenant_id": tenant.get("id", ""),
+    }
