@@ -137,8 +137,8 @@ async def process_telegram_update(data: dict):
                 safe_name = escape_markdown_v2(user_name)
                 await send_telegram_message(
                     chat_id,
-                    f"Hola {safe_name}. No tienes un negocio vinculado.\n"
-                    "Si ya compraste el software, envia tu token asi:\n`/conectar TU_CODIGO`"
+                    f"Hola {safe_name}\\. No tienes un negocio vinculado\\.\\n"
+                    "Si ya compraste el software, envia tu token asi:\\n`/conectar TU_CODIGO`"
                 )
             return
 
