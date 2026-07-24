@@ -333,6 +333,19 @@ export default function InventoryTable({ token, jwt }: { token: string; jwt?: st
                   <p className="text-sm text-gray-900 font-medium truncate max-w-[180px]">
                     {product.name}
                   </p>
+                  {customColumns.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {customColumns.map(col => {
+                        const val = (product as any)[col.name];
+                        if (!val) return null;
+                        return (
+                          <span key={col.id} className="inline-flex items-center text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-600">
+                            <span className="text-gray-400 mr-0.5">{col.name}:</span> {val}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  )}
                 </td>
                 <td className="px-6 py-3.5 whitespace-nowrap hidden md:table-cell">
                   <span className="text-xs text-gray-500">{product.category}</span>
