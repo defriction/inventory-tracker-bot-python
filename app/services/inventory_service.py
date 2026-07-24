@@ -467,6 +467,17 @@ class InventoryService:
         logger.info(f"Procesando instrucción de '{user_name}': {intent}")
 
         action = intent.get('accion')
+        # Normalize AI action variants to canonical verbs
+        _ACTION_MAP = {
+            'VENTA': 'VENDER', 'VENDO': 'VENDER', 'VENDI': 'VENDER', 'VENDÍ': 'VENDER',
+            'COMPRA': 'COMPRAR', 'COMPRO': 'COMPRAR', 'COMPRE': 'COMPRAR', 'COMPRÉ': 'COMPRAR',
+            'CREA': 'CREAR', 'CREO': 'CREAR', 'CREACION': 'CREAR', 'CREACIÓN': 'CREAR',
+            'AJUSTA': 'AJUSTAR', 'AJUSTE': 'AJUSTAR',
+            'ACTUALIZA': 'ACTUALIZAR', 'ACTUALIZACION': 'ACTUALIZAR', 'ACTUALIZACIÓN': 'ACTUALIZAR',
+            'BUSCA': 'BUSCAR', 'BUSCO': 'BUSCAR', 'CONSULTA': 'BUSCAR', 'CONSULTAR': 'BUSCAR',
+            'LISTA': 'LISTAR', 'LISTADO': 'LISTAR',
+        }
+        action = _ACTION_MAP.get(action, action)
         product_name = intent.get('producto')
         if product_name is not None:
             product_name = str(product_name)
@@ -538,7 +549,7 @@ class InventoryService:
                 return self._handle_adjustment(row_idx, real_name, qty, user_name)
             elif action == "ACTUALIZAR":
                 return self._handle_update(row_idx, real_name, intent)
-            elif action == "BUSCAR" or action == "CONSULTA":
+            elif action == "BUSCAR":
                 with get_conn(self.tenant_id) as conn:
                     p = conn.execute(
                         "SELECT name, sku, category, stock, unit, price, cost, expiration_date, location, invima, lote FROM products WHERE rowid = ?",
