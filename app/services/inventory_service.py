@@ -286,7 +286,7 @@ class InventoryService:
                 (row_idx - 1,)
             ).fetchone()
             if not product:
-                return f"⚠️ Producto no encontrado."
+                return f"⚠️ Producto no encontrado\\."
 
             current_stock = product['stock']
             if current_stock < qty:
@@ -313,7 +313,7 @@ class InventoryService:
                 (row_idx - 1,)
             ).fetchone()
             if not product:
-                return f"⚠️ Producto no encontrado."
+                return f"⚠️ Producto no encontrado\\."
 
             new_stock = product['stock'] + qty
             conn.execute(
@@ -335,7 +335,7 @@ class InventoryService:
                 (row_idx - 1,)
             ).fetchone()
             if not product:
-                return f"⚠️ Producto no encontrado."
+                return f"⚠️ Producto no encontrado\\."
 
             new_stock = max(0, product['stock'] + qty)
             conn.execute(
@@ -357,7 +357,7 @@ class InventoryService:
                 (row_idx - 1,)
             ).fetchone()
             if not product:
-                return f"⚠️ Producto no encontrado."
+                return f"⚠️ Producto no encontrado\\."
 
             current_name = product['name']
             sku = product['sku']
