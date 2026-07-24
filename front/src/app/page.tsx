@@ -27,7 +27,7 @@ const navItems: { id: Tab; label: string; icon: any; adminOnly?: boolean }[] = [
   { id: 'po_builder', label: 'Pedido', icon: FileText },
   { id: 'usage', label: 'Uso', icon: Activity, adminOnly: true },
   { id: 'admin', label: 'Admin', icon: Shield, adminOnly: true },
-  { id: 'my_business', label: 'Mi PyME', icon: Building },
+  { id: 'my_business', label: 'Perfil', icon: Building },
 ];
 
 export default function Home() {
