@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { Plus, Search, Truck, X, Edit3, Trash2, ExternalLink, Package, Clock, CheckCircle2, AlertCircle } from 'lucide-react';
 import { Order, OrdersResponse } from '@/types';
+import toast from 'react-hot-toast';
+import { confirmToast } from '@/lib/confirm';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
@@ -55,7 +57,8 @@ export default function OrderTracker({ token, jwt }: { token: string; jwt?: stri
   };
 
   const deleteOrder = async (id: number) => {
-    if (!confirm('Eliminar este pedido?')) return;
+    const ok = await confirmToast('¿Eliminar este pedido?');
+    if (!ok) return;
     await fetch(`${API_URL}/api/orders/${id}?token=${token}`, { method: 'DELETE', headers: headers() });
     fetchOrders();
   };

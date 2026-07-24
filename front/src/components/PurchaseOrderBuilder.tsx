@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Search, FileText, Download, X, Plus, Minus, ShoppingCart, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { Product } from '@/types';
 import { getInventory } from '@/lib/api';
+import toast from 'react-hot-toast';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
@@ -71,7 +72,7 @@ export default function PurchaseOrderBuilder({ token, jwt }: { token: string; jw
       link.href = `data:application/pdf;base64,${data.pdf_base64}`;
       link.download = data.filename;
       link.click();
-    } catch (e) { alert('Error generando PDF'); }
+    } catch (e) { toast.error('Error generando PDF'); }
     finally { setGenerating(false); }
   };
 

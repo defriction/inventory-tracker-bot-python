@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { Edit3, Trash2, X } from 'lucide-react';
 import { Product } from '@/types';
 import { getInventory, updateProduct, deleteProduct } from '@/lib/api';
+import { confirmToast } from '@/lib/confirm';
 import toast from 'react-hot-toast';
 
 const ITEMS_PER_PAGE = 10;
@@ -61,7 +62,8 @@ export default function InventoryTable({ token, jwt }: { token: string; jwt?: st
   };
 
   const handleDelete = async (sku: string, name: string) => {
-    if (!confirm(`Eliminar "${name}"?`)) return;
+    const ok = await confirmToast(`¿Eliminar "${name}"?`);
+    if (!ok) return;
     try {
       await deleteProduct(token, sku, jwt);
       fetchData();

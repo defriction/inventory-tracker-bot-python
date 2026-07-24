@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { Building2, Plus, Trash2, Copy, Check, Users, Store, Hash, X } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { confirmToast } from '@/lib/confirm';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
@@ -56,7 +58,8 @@ export default function AdminPanel({ jwt }: { jwt?: string }) {
   };
 
   const deleteTenant = async (id: string, name: string) => {
-    if (!confirm(`Eliminar "${name}" y todos sus datos? Esta accion no se puede deshacer.`)) return;
+    const ok = await confirmToast(`¿Eliminar "${name}" y todos sus datos? Esta acción no se puede deshacer.`);
+    if (!ok) return;
     setDeleting(id);
     await fetch(`${API_URL}/admin/tenants/${id}`, { method: 'DELETE', headers: headers() });
     setDeleting('');
