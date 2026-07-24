@@ -510,23 +510,30 @@ async def get_analytics(
 
         # --- RECOMENDACIONES ---
         recommendations = []
+        rec_details = {}
         # Productos clase A con stock bajo
         a_low = [i for i in abc_items if i["class"] == "A" and any(
             p["sku"] == i["sku"] and p["stock"] <= 5 for p in products)]
         if a_low:
+            items = [{"sku": i["sku"], "name": i["name"], "stock": next((p["stock"] for p in products if p["sku"] == i["sku"]), 0)} for i in a_low]
             recommendations.append(f"⚠️ {len(a_low)} productos clase A (alta rentabilidad) tienen stock bajo. Prioriza reabastecerlos.")
-        # Productos sin ventas en 30 dias con stock alto
+            rec_details["a_low_stock"] = items
+        # Productos sin ventas en 90 dias con stock alto
         stale = [p for p in products if p["stock"] > 10 and p["sku"] not in sales_by_product]
         if stale:
+            items = [{"sku": p["sku"], "name": p["name"], "stock": p["stock"]} for p in stale]
             recommendations.append(f"📦 {len(stale)} productos con stock alto no han tenido ventas en 90 dias. Considera promociones.")
+            rec_details["stale_stock"] = items
         # Vencidos
         expired = [e for e in expiring_list if e["days_left"] <= 0]
         if expired:
             recommendations.append(f"🚨 {len(expired)} productos vencidos. Retiralos del inventario.")
+            rec_details["expired"] = [{"sku": e["sku"], "name": e["name"], "days_left": e["days_left"]} for e in expired]
         # Margenes negativos
         negative_margins = [m for m in margins if m["margin_pct"] < 0]
         if negative_margins:
             recommendations.append(f"📉 {len(negative_margins)} productos se venden a perdida. Revisa sus precios.")
+            rec_details["negative_margins"] = [{"sku": m["sku"], "name": m["name"], "margin_pct": m["margin_pct"], "price": m["price"], "cost": m["cost"]} for m in negative_margins]
 
         return {
             "top_sellers": top_sellers,
@@ -540,6 +547,7 @@ async def get_analytics(
                 "expiring": len(expiring_list),
             },
             "recommendations": recommendations,
+            "recommendation_details": rec_details,
             "total_revenue_90d": round(total_revenue, 2),
             "total_units_sold_90d": sum(v["units_sold"] for v in sales_by_product.values()),
             # Advanced analytics with pandas + numpy + scipy

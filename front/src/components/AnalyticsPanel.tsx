@@ -14,6 +14,7 @@ export default function AnalyticsPanel({ token, jwt }: { token: string; jwt?: st
   const [data, setData] = useState<AnalyticsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [expandedRec, setExpandedRec] = useState<number | null>(null);
 
   useEffect(() => {
     const fetchData = () => {
@@ -63,14 +64,60 @@ export default function AnalyticsPanel({ token, jwt }: { token: string; jwt?: st
 
       {/* Recomendaciones */}
       {data.recommendations.length > 0 && (
-        <SectionCard title="Recomendaciones para tu Negocio" icon="💡" description="Alertas accionables basadas en los datos reales de tu inventario. Cada recomendacion busca maximizar tus ganancias y reducir perdidas.">
+        <SectionCard title="Recomendaciones para tu Negocio" icon="💡" description="Toca cada alerta para ver los productos especificos.">
           <div className="space-y-2">
-            {data.recommendations.map((rec, i) => (
-              <div key={i} className="flex items-start gap-3 px-4 py-3 rounded-lg bg-amber-50 border border-amber-200">
-                <span className="text-lg shrink-0 mt-0.5">{rec.slice(0, 2)}</span>
-                <p className="text-sm text-amber-800">{rec.slice(3)}</p>
-              </div>
-            ))}
+            {data.recommendations.map((rec, i) => {
+              const keys = Object.keys(data.recommendation_details || {});
+              const detailKey = keys[i];
+              const items = detailKey ? data.recommendation_details[detailKey] : [];
+              const expanded = expandedRec === i;
+              return (
+                <div key={i}>
+                  <button
+                    onClick={() => setExpandedRec(expanded ? null : i)}
+                    className="w-full flex items-start gap-3 px-4 py-3 rounded-lg bg-amber-50 border border-amber-200 hover:bg-amber-100 transition-colors text-left"
+                  >
+                    <span className="text-lg shrink-0 mt-0.5">{rec.slice(0, 2)}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-amber-800">{rec.slice(3)}</p>
+                      {items.length > 0 && (
+                        <span className="text-xs text-amber-600 mt-0.5 block">
+                          {expanded ? '▲ Ocultar' : '▼ Ver productos'}
+                        </span>
+                      )}
+                    </div>
+                  </button>
+                  {expanded && items.length > 0 && (
+                    <div className="mt-1 ml-8 space-y-1 max-h-48 overflow-y-auto">
+                      {items.map((item, j) => (
+                        <div key={j} className="flex items-center justify-between px-3 py-1.5 rounded-lg bg-white border border-amber-100 text-xs">
+                          <div className="flex-1 min-w-0">
+                            <span className="text-gray-800 font-medium truncate block">{item.name}</span>
+                            <code className="text-gray-400 font-mono">{item.sku}</code>
+                          </div>
+                          <div className="text-right shrink-0 ml-2">
+                            {item.stock !== undefined && (
+                              <span className={`font-semibold ${item.stock <= 0 ? 'text-red-600' : item.stock <= 5 ? 'text-amber-600' : 'text-gray-500'}`}>
+                                Stock: {item.stock}
+                              </span>
+                            )}
+                            {item.days_left !== undefined && (
+                              <span className="text-red-600 font-semibold block">Vencido</span>
+                            )}
+                            {item.margin_pct !== undefined && (
+                              <span className="text-red-600 font-semibold block">
+                                Margen: {item.margin_pct}%
+                                <span className="text-gray-400 block">V: ${item.price} C: ${item.cost}</span>
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </SectionCard>
       )}

@@ -108,6 +108,16 @@ export interface StockHealth {
   expiring: number;
 }
 
+export interface RecDetailItem {
+  sku: string;
+  name: string;
+  stock?: number;
+  days_left?: number;
+  margin_pct?: number;
+  price?: number;
+  cost?: number;
+}
+
 export interface AnalyticsResponse {
   top_sellers: TopSeller[];
   category_breakdown: CategoryBreakdown[];
@@ -116,6 +126,7 @@ export interface AnalyticsResponse {
   margins: MarginItem[];
   stock_health: StockHealth;
   recommendations: string[];
+  recommendation_details: Record<string, RecDetailItem[]>;
   total_revenue_90d: number;
   total_units_sold_90d: number;
   advanced: AdvancedAnalytics;
