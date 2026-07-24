@@ -506,6 +506,31 @@ class InventoryService:
 
         return "\n".join(lines)
 
+    # ── Remisiones list ──
+
+    def _handle_list_remisiones(self):
+        """Lista las ultimas remisiones del tenant."""
+        try:
+            from app.database_sa import get_session
+            from app.models import Remision
+            session = get_session(self.tenant_id)
+            remisiones = session.query(Remision).order_by(Remision.created_at.desc()).limit(10).all()
+            session.close()
+
+            if not remisiones:
+                return "📭 No hay remisiones registradas\\."
+
+            lines = [f"📋 *Ultimas Remisiones* ({len(remisiones)}):"]
+            for r in remisiones:
+                client_name = self._escape(r.client.name if r.client else "Sin cliente")
+                lines.append(
+                    f"• 🚚 REM\\-{r.uid} — {client_name}\\n"
+                    f"  📦 {len(r.items)} items \\| 💰 ${r.total_amount:,.0f} \\| 📅 {str(r.created_at)[:10]}"
+                )
+            return "\\n".join(lines)
+        except Exception:
+            return "❌ Error al consultar remisiones\\."
+
     # ── Multi-match formatting ──
 
     def _format_multi_match(self, matches, action, query):
@@ -542,6 +567,7 @@ class InventoryService:
             'ACTUALIZA': 'ACTUALIZAR', 'ACTUALIZACION': 'ACTUALIZAR', 'ACTUALIZACIÓN': 'ACTUALIZAR',
             'BUSCA': 'BUSCAR', 'BUSCO': 'BUSCAR', 'CONSULTA': 'BUSCAR', 'CONSULTAR': 'BUSCAR',
             'LISTA': 'LISTAR', 'LISTADO': 'LISTAR',
+            'REMISIONES': 'REMISIONES', 'REMITOS': 'REMISIONES',
         }
         action = _ACTION_MAP.get(action, action)
         product_name = intent.get('producto')
@@ -635,6 +661,8 @@ class InventoryService:
                     f"💵 Costo: ${self._escape(p['cost'])}"
                     f"{exp}{loc}{inv}{lot}"
                 )
+            elif action == "REMISIONES":
+                return self._handle_list_remisiones()
             else:
                 return "🤔 No entendí la acción\\."
 
