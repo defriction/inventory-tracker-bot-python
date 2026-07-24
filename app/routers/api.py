@@ -68,7 +68,7 @@ def get_inventory_service(tenant: dict = Depends(get_current_tenant)):
 # --- Endpoints ---
 
 
-@router.get('/inventory', response_model=InventoryResponse)
+
 
 @router.post('/products')
 async def create_product(
@@ -94,6 +94,7 @@ async def create_product(
     except Exception as e:
         log.error(f"CREATE FAIL | {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
+@router.get('/inventory', response_model=InventoryResponse)
 async def get_inventory(
     token: str = Query(...),
     inventory_service: InventoryService = Depends(get_inventory_service)
