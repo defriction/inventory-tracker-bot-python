@@ -3,9 +3,10 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Edit3, Trash2, X } from 'lucide-react';
 import { Product } from '@/types';
-import { getInventory, updateProduct, deleteProduct } from '@/lib/api';
+import { getInventory, updateProduct, deleteProduct, createProduct } from '@/lib/api';
 import { confirmToast } from '@/lib/confirm';
 import toast from 'react-hot-toast';
+import { Plus } from 'lucide-react';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -26,6 +27,8 @@ export default function InventoryTable({ token, jwt }: { token: string; jwt?: st
   const [editing, setEditing] = useState<Product | null>(null);
   const [editForm, setEditForm] = useState<Partial<Product>>({});
   const [saving, setSaving] = useState(false);
+  const [showCreate, setShowCreate] = useState(false);
+  const [newProduct, setNewProduct] = useState({ name: '', category: 'General', stock: 0, unit: 'UND', cost: 0, price: 0, expiration_date: '', location: '', invima: '', lote: '', sku: '' });
 
   useEffect(() => {
     const fetchData = () => {
@@ -75,6 +78,19 @@ export default function InventoryTable({ token, jwt }: { token: string; jwt?: st
     getInventory(token, jwt)
       .then((data) => { setProducts(data.products); setLoading(false); })
       .catch((err) => { setError(err.message); setLoading(false); });
+  };
+
+  const handleCreate = async () => {
+    if (!newProduct.name) return;
+    setSaving(true);
+    try {
+      await createProduct(token, newProduct, jwt);
+      setShowCreate(false);
+      setNewProduct({ name: '', category: 'General', stock: 0, unit: 'UND', cost: 0, price: 0, expiration_date: '', location: '', invima: '', lote: '', sku: '' });
+      fetchData();
+      toast.success('Producto creado');
+    } catch { toast.error('Error al crear'); }
+    finally { setSaving(false); }
   };
 
   // Extraer categorias unicas
@@ -207,6 +223,12 @@ export default function InventoryTable({ token, jwt }: { token: string; jwt?: st
                 {(categoryFilter ? 1 : 0) + (stockFilter ? 1 : 0)}
               </span>
             )}
+          </button>
+
+          {/* New Product */}
+          <button onClick={() => setShowCreate(true)}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium bg-indigo-600 text-white hover:bg-indigo-500 transition-colors shadow-sm">
+            <Plus className="w-3.5 h-3.5" /> Nuevo
           </button>
 
           {/* Results count */}
@@ -518,6 +540,92 @@ export default function InventoryTable({ token, jwt }: { token: string; jwt?: st
               <button onClick={saveEdit} disabled={saving}
                 className="w-full py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-xl hover:bg-indigo-500 disabled:opacity-40 transition-colors">
                 {saving ? 'Guardando...' : 'Guardar Cambios'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Create Modal */}
+      {showCreate && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setShowCreate(false)} />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6">
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="text-lg font-bold text-gray-900">Nuevo Producto</h3>
+              <button onClick={() => setShowCreate(false)} className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Nombre *</label>
+                  <input value={newProduct.name} onChange={e => setNewProduct({...newProduct, name: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500" placeholder="Nombre del producto" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">SKU (opcional)</label>
+                  <input value={newProduct.sku} onChange={e => setNewProduct({...newProduct, sku: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500" placeholder="Auto-generado" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Categoria</label>
+                  <input value={newProduct.category} onChange={e => setNewProduct({...newProduct, category: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Unidad</label>
+                  <input value={newProduct.unit} onChange={e => setNewProduct({...newProduct, unit: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500" />
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Stock</label>
+                  <input type="number" value={newProduct.stock} onChange={e => setNewProduct({...newProduct, stock: parseInt(e.target.value) || 0})}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Precio</label>
+                  <input type="number" value={newProduct.price} onChange={e => setNewProduct({...newProduct, price: parseFloat(e.target.value) || 0})}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Costo</label>
+                  <input type="number" value={newProduct.cost} onChange={e => setNewProduct({...newProduct, cost: parseFloat(e.target.value) || 0})}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Vencimiento</label>
+                  <input type="date" value={newProduct.expiration_date} onChange={e => setNewProduct({...newProduct, expiration_date: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Ubicacion</label>
+                  <input value={newProduct.location} onChange={e => setNewProduct({...newProduct, location: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">INVIMA</label>
+                  <input value={newProduct.invima} onChange={e => setNewProduct({...newProduct, invima: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Lote</label>
+                  <input value={newProduct.lote} onChange={e => setNewProduct({...newProduct, lote: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500" />
+                </div>
+              </div>
+              <button onClick={handleCreate} disabled={!newProduct.name || saving}
+                className="w-full py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-xl hover:bg-indigo-500 disabled:opacity-40 transition-colors">
+                {saving ? 'Creando...' : 'Crear Producto'}
               </button>
             </div>
           </div>

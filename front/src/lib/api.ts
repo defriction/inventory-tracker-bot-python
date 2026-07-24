@@ -35,6 +35,16 @@ export async function deleteProduct(token: string, sku: string, jwt?: string): P
   if (!res.ok) throw new Error('Error eliminando producto');
 }
 
+export async function createProduct(token: string, product: Partial<Product>, jwt?: string): Promise<Product> {
+  const res = await fetch(`${API_URL}/api/products?token=${token}`, {
+    method: 'POST',
+    headers: authHeaders(jwt, { 'Content-Type': 'application/json' }),
+    body: JSON.stringify(product),
+  });
+  if (!res.ok) throw new Error('Error creando producto');
+  return res.json();
+}
+
 export async function getStats(token: string, jwt?: string): Promise<Stats> {
   const res = await fetch(`${API_URL}/api/stats?token=${token}`, {
     cache: 'no-store',

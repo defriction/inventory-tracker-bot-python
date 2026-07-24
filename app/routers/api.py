@@ -17,8 +17,8 @@ router = APIRouter(
 # --- Schemas ---
 
 class ProductSchema(BaseModel):
-    uuid: str
-    sku: str
+    uuid: str = ""
+    sku: str = ""
     name: str
     category: str
     stock: int
@@ -69,6 +69,26 @@ def get_inventory_service(tenant: dict = Depends(get_current_tenant)):
 
 
 @router.get('/inventory', response_model=InventoryResponse)
+
+@router.post('/products')
+async def create_product(
+    data: ProductSchema,
+    token: str = Query(...),
+    inventory_service: InventoryService = Depends(get_inventory_service)
+):
+    """Crea un nuevo producto en el inventario."""
+    try:
+        import uuid
+        new_uuid = str(uuid.uuid4())[:8]
+        sku = data.sku or f"GEN-{new_uuid[:4].upper()}"
+        row = [new_uuid, sku, data.name, data.category, data.stock, data.unit,
+               data.cost, data.price, data.expiration_date, data.location,
+               data.invima, data.lote]
+        inventory_service.inventory_sheet.append_row(row)
+        inventory_service._log_movement("CREACION", sku, data.name, data.stock, "Admin", "Creacion manual")
+        return {"status": "created", "sku": sku, "uuid": new_uuid}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 async def get_inventory(
     token: str = Query(...),
     inventory_service: InventoryService = Depends(get_inventory_service)
