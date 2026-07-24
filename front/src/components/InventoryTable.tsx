@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
+import { Edit3, Trash2, X } from 'lucide-react';
 import { Product } from '@/types';
-import { getInventory } from '@/lib/api';
+import { getInventory, updateProduct, deleteProduct } from '@/lib/api';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -20,6 +21,9 @@ export default function InventoryTable({ token, jwt }: { token: string; jwt?: st
   const [sortDir, setSortDir] = useState<SortDir>('asc');
   const [page, setPage] = useState(1);
   const [showFilters, setShowFilters] = useState(false);
+  const [editing, setEditing] = useState<Product | null>(null);
+  const [editForm, setEditForm] = useState<Partial<Product>>({});
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     const fetchData = () => {
@@ -37,6 +41,36 @@ export default function InventoryTable({ token, jwt }: { token: string; jwt?: st
     const interval = setInterval(fetchData, 60000);
     return () => clearInterval(interval);
   }, [token, jwt]);
+
+  const startEdit = (p: Product) => {
+    setEditing(p);
+    setEditForm({ name: p.name, category: p.category, stock: p.stock, unit: p.unit, price: p.price, cost: p.cost, expiration_date: p.expiration_date, location: p.location, invima: p.invima, lote: p.lote });
+  };
+
+  const saveEdit = async () => {
+    if (!editing) return;
+    setSaving(true);
+    try {
+      await updateProduct(token, { sku: editing.sku, ...editForm }, jwt);
+      setEditing(null);
+      fetchData();
+    } catch { alert('Error al guardar'); }
+    finally { setSaving(false); }
+  };
+
+  const handleDelete = async (sku: string, name: string) => {
+    if (!confirm(`Eliminar "${name}"?`)) return;
+    try {
+      await deleteProduct(token, sku, jwt);
+      fetchData();
+    } catch { alert('Error al eliminar'); }
+  };
+
+  const fetchData = () => {
+    getInventory(token, jwt)
+      .then((data) => { setProducts(data.products); setLoading(false); })
+      .catch((err) => { setError(err.message); setLoading(false); });
+  };
 
   // Extraer categorias unicas
   const categories = useMemo(() => {
@@ -256,6 +290,9 @@ export default function InventoryTable({ token, jwt }: { token: string; jwt?: st
               >
                 Vence <SortIcon field="expiration_date" />
               </th>
+              <th className="text-center px-3 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider w-20">
+                Acciones
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-50">
@@ -305,6 +342,18 @@ export default function InventoryTable({ token, jwt }: { token: string; jwt?: st
                   ) : (
                     <span className="text-xs text-gray-300">—</span>
                   )}
+                </td>
+                <td className="px-2 py-3.5 whitespace-nowrap text-center">
+                  <div className="flex items-center justify-center gap-1">
+                    <button onClick={() => startEdit(product)}
+                      className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors">
+                      <Edit3 className="w-4 h-4" />
+                    </button>
+                    <button onClick={() => handleDelete(product.sku, product.name)}
+                      className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -387,6 +436,85 @@ export default function InventoryTable({ token, jwt }: { token: string; jwt?: st
             >
               ⏭
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Modal */}
+      {editing && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setEditing(null)} />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6">
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="text-lg font-bold text-gray-900">Editar {editing.name}</h3>
+              <button onClick={() => setEditing(null)} className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Nombre</label>
+                  <input value={editForm.name || ''} onChange={e => setEditForm({...editForm, name: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Categoria</label>
+                  <input value={editForm.category || ''} onChange={e => setEditForm({...editForm, category: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500" />
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Stock</label>
+                  <input type="number" value={editForm.stock || 0} onChange={e => setEditForm({...editForm, stock: parseInt(e.target.value) || 0})}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Unidad</label>
+                  <input value={editForm.unit || ''} onChange={e => setEditForm({...editForm, unit: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Precio</label>
+                  <input type="number" value={editForm.price || 0} onChange={e => setEditForm({...editForm, price: parseFloat(e.target.value) || 0})}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Costo</label>
+                  <input type="number" value={editForm.cost || 0} onChange={e => setEditForm({...editForm, cost: parseFloat(e.target.value) || 0})}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Ubicacion</label>
+                  <input value={editForm.location || ''} onChange={e => setEditForm({...editForm, location: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Vencimiento</label>
+                  <input type="date" value={editForm.expiration_date || ''} onChange={e => setEditForm({...editForm, expiration_date: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">INVIMA</label>
+                  <input value={editForm.invima || ''} onChange={e => setEditForm({...editForm, invima: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Lote</label>
+                <input value={editForm.lote || ''} onChange={e => setEditForm({...editForm, lote: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500" />
+              </div>
+              <button onClick={saveEdit} disabled={saving}
+                className="w-full py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-xl hover:bg-indigo-500 disabled:opacity-40 transition-colors">
+                {saving ? 'Guardando...' : 'Guardar Cambios'}
+              </button>
+            </div>
           </div>
         </div>
       )}

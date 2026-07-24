@@ -27,6 +27,14 @@ export async function updateProduct(token: string, product: Partial<Product>, jw
   return res.json();
 }
 
+export async function deleteProduct(token: string, sku: string, jwt?: string): Promise<void> {
+  const res = await fetch(`${API_URL}/api/products/${sku}?token=${token}`, {
+    method: 'DELETE',
+    headers: authHeaders(jwt),
+  });
+  if (!res.ok) throw new Error('Error eliminando producto');
+}
+
 export async function getStats(token: string, jwt?: string): Promise<Stats> {
   const res = await fetch(`${API_URL}/api/stats?token=${token}`, {
     cache: 'no-store',

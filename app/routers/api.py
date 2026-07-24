@@ -190,6 +190,26 @@ async def update_product(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.delete('/products/{sku}')
+async def delete_product(
+    sku: str,
+    token: str = Query(...),
+    inventory_service: InventoryService = Depends(get_inventory_service)
+):
+    """Elimina un producto del inventario."""
+    try:
+        row_idx, name = inventory_service._find_product_row_by_keyword(sku, exact_match=True)
+        if not row_idx:
+            raise HTTPException(status_code=404, detail="Producto no encontrado")
+        
+        inventory_service._delete_product(row_idx)
+        return {"status": "deleted", "sku": sku}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @router.get('/movements')
 async def get_movements(
     token: str = Query(...),

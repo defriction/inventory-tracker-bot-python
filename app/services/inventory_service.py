@@ -219,6 +219,16 @@ class InventoryService:
 
     # ── Movement logging ──
 
+    def _delete_product(self, row_idx: int):
+        """Delete a product by 1-indexed row position."""
+        with get_conn(self.tenant_id) as conn:
+            product = conn.execute(
+                "SELECT rowid, sku, name FROM products ORDER BY rowid LIMIT 1 OFFSET ?",
+                (row_idx - 1,)
+            ).fetchone()
+            if product:
+                conn.execute("DELETE FROM products WHERE rowid = ?", (product['rowid'],))
+
     def _log_movement(self, mov_type, sku, name, qty, user, notes=""):
         logger.info(f"Registrando movimiento: {mov_type} | {sku}")
         ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
