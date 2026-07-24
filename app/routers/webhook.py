@@ -3,7 +3,6 @@ import logging
 import sys
 from fastapi import APIRouter, Request, BackgroundTasks
 from app.core.config import settings
-from app.services.tenant_service import TenantService
 from app.services.factory import get_inventory_service, get_tenant_service
 from app.services.ia_service import interpret_intent
 
