@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Bot, Package, ArrowRight, Zap, TrendingUp, Shield, Smartphone } from 'lucide-react';
+import { Bot, Package, ArrowRight, Zap, TrendingUp, Shield, Smartphone, Columns, Users, Truck, Sparkles, FileText } from 'lucide-react';
 import PwaInstallBanner from './PwaInstallBanner';
 
 interface Props {
@@ -67,6 +67,21 @@ export default function LoginPage({ onLogin, loading, error }: Props) {
               </span>
               <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 border border-white/10 text-sm text-white backdrop-blur-sm">
                 <Smartphone className="w-4 h-4 text-blue-300" /> PWA Móvil
+              </span>
+              <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 border border-white/10 text-sm text-white backdrop-blur-sm">
+                <Columns className="w-4 h-4 text-pink-300" /> Campos Personalizados
+              </span>
+              <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 border border-white/10 text-sm text-white backdrop-blur-sm">
+                <Users className="w-4 h-4 text-cyan-300" /> Clientes
+              </span>
+              <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 border border-white/10 text-sm text-white backdrop-blur-sm">
+                <Truck className="w-4 h-4 text-orange-300" /> Remisiones
+              </span>
+              <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 border border-white/10 text-sm text-white backdrop-blur-sm">
+                <FileText className="w-4 h-4 text-lime-300" /> Órdenes de Compra
+              </span>
+              <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 border border-white/10 text-sm text-white/70 backdrop-blur-sm border-dashed">
+                <Sparkles className="w-4 h-4 text-amber-300" /> Próximamente: Facturación Electrónica
               </span>
             </div>
           </div>
