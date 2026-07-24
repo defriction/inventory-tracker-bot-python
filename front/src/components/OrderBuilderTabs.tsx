@@ -111,7 +111,7 @@ export default function OrderBuilderTabs({ token, jwt }: { token: string; jwt?: 
   return (
     <div>
       {/* Tabs */}
-      <div className="flex gap-2 mb-4">
+      <div className="flex justify-center gap-2 mb-4">
         {[
           { key: 'purchase' as const, label: 'Orden de Compra', icon: <FileText className="w-4 h-4" /> },
           { key: 'remision' as const, label: 'Remisión', icon: <Truck className="w-4 h-4" /> },
