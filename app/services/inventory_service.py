@@ -439,7 +439,14 @@ class InventoryService:
                     params
                 )
 
-        return f"✅ *Producto Actualizado*\\n🛒 {self._escape(current_name)}\\n🔧 Campos modificados: {len(updates) - 1}"
+            # Save unknown fields as custom values
+            known_keys = {'precio', 'precio_compra', 'cantidad', 'categoria', 'fecha_vencimiento',
+                          'ubicacion', 'invima', 'lote', 'nombre', 'nuevo_sku', 'sku'}
+            for key, val in intent.items():
+                if key not in known_keys and val is not None and key not in ('accion', 'producto'):
+                    self._save_custom_field(sku, key, str(val))
+
+        return f"✅ *Producto Actualizado*\n🛒 {self._escape(current_name)}\n🔧 Campos modificados: {len(updates) - 1}"
 
     # ── Custom fields ──
 
@@ -494,7 +501,7 @@ class InventoryService:
             loc = f" | 📍 {r['location']}" if r['location'] else ""
             lines.append(
                 f"• {self._escape(r['name'])} — {stock_icon} {r['stock']} {r['unit']}"
-                f"\\n  `{self._escape(r['sku'])}` \| 📂 {self._escape(r['category'])}{exp}{loc}"
+                f"\n  `{self._escape(r['sku'])}` \| 📂 {self._escape(r['category'])}{exp}{loc}"
             )
 
         return "\n".join(lines)
@@ -509,12 +516,12 @@ class InventoryService:
 
         lines = [
             f"🔍 Encontre *{len(matches)}* productos para *{self._escape(query)}*\\.\n",
-            f"Selecciona cual quieres *{action_label}*:\\n",
+            f"Selecciona cual quieres *{action_label}*:\n",
         ]
         for idx, m in enumerate(matches, 1):
             stock_badge = "⚠️" if m["stock"] <= 5 else "📦"
             lines.append(
-                f"{idx}️⃣  *{self._escape(m['name'])}*  \\|  🔢 `{self._escape(m['sku'])}`\\n"
+                f"{idx}️⃣  *{self._escape(m['name'])}*  \\|  🔢 `{self._escape(m['sku'])}`\n"
                 f"     📂 {self._escape(m['category'])}  \\|  {stock_badge} {self._escape(m['stock'])} UND"
             )
         lines.append(f"\n_Responde con el *SKU* o *nombre exacto* para {action_label}\\._")
@@ -562,7 +569,7 @@ class InventoryService:
         requested_sku = intent.get('nuevo_sku') or intent.get('sku') or ""
 
         if action == "DESCONOCIDO":
-            return "🤔 No entendí qué quieres hacer\\.\\nIntenta con: *Vendí 2 articulos* o *Cuánto vale el cemento*\\."
+            return "🤔 No entendí qué quieres hacer\\.\nIntenta con: *Vendí 2 articulos* o *Cuánto vale el cemento*\\."
 
         if action == "LISTAR":
             return self._handle_list(intent)
@@ -616,15 +623,15 @@ class InventoryService:
                     ).fetchone()
                 if not p:
                     return "⚠️ Producto no encontrado\\."
-                exp = f"\\n📅 Vence: {self._escape(p['expiration_date'])}" if p['expiration_date'] else ""
-                loc = f"\\n📍 Ubicación: {self._escape(p['location'])}" if p['location'] else ""
-                inv = f"\\n🏥 INVIMA: {self._escape(p['invima'])}" if p['invima'] else ""
-                lot = f"\\n🏷️ Lote: {self._escape(p['lote'])}" if p['lote'] else ""
+                exp = f"\n📅 Vence: {self._escape(p['expiration_date'])}" if p['expiration_date'] else ""
+                loc = f"\n📍 Ubicación: {self._escape(p['location'])}" if p['location'] else ""
+                inv = f"\n🏥 INVIMA: {self._escape(p['invima'])}" if p['invima'] else ""
+                lot = f"\n🏷️ Lote: {self._escape(p['lote'])}" if p['lote'] else ""
                 return (
-                    f"🔎 *{self._escape(p['name'])}*\\n"
-                    f"🔢 SKU: `{self._escape(p['sku'])}`\\n"
-                    f"📂 Categoría: {self._escape(p['category'])} \| 📦 Unidad: {self._escape(p['unit'])}\\n"
-                    f"📊 Stock: {self._escape(p['stock'])} \| 💰 Precio: ${self._escape(p['price'])}\\n"
+                    f"🔎 *{self._escape(p['name'])}*\n"
+                    f"🔢 SKU: `{self._escape(p['sku'])}`\n"
+                    f"📂 Categoría: {self._escape(p['category'])} \| 📦 Unidad: {self._escape(p['unit'])}\n"
+                    f"📊 Stock: {self._escape(p['stock'])} \| 💰 Precio: ${self._escape(p['price'])}\n"
                     f"💵 Costo: ${self._escape(p['cost'])}"
                     f"{exp}{loc}{inv}{lot}"
                 )
