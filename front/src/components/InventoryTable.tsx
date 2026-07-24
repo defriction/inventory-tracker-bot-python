@@ -87,6 +87,10 @@ export default function InventoryTable({ token, jwt }: { token: string; jwt?: st
       await createProduct(token, newProduct, jwt);
       setShowCreate(false);
       setNewProduct({ name: '', category: 'General', stock: 0, unit: 'UND', cost: 0, price: 0, expiration_date: '', location: '', invima: '', lote: '', sku: '' });
+      setSearch('');
+      setCategoryFilter('');
+      setStockFilter('');
+      setPage(1);
       fetchData();
       toast.success('Producto creado');
     } catch { toast.error('Error al crear'); }

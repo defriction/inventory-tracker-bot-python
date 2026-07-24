@@ -56,7 +56,7 @@ class SheetAdapter:
         """Returns 2D array: [header_row, ...data_rows]. Matches gspread format."""
         with self._conn() as conn:
             cols = ', '.join(self._col_names)
-            rows = conn.execute(f"SELECT {cols} FROM {self._table} ORDER BY rowid").fetchall()
+            rows = conn.execute(f"SELECT {cols} FROM {self._table} ORDER BY rowid DESC").fetchall()
 
         result = [self._header]
         for row in rows:
