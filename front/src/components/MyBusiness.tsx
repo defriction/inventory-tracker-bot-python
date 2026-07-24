@@ -18,6 +18,9 @@ export default function MyBusiness({ token, jwt }: { token: string; jwt?: string
   const [movements, setMovements] = useState<any[]>([]);
   const [lowStock, setLowStock] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState(false);
+  const [editForm, setEditForm] = useState({ pyme_name: '', nit: '', address: '', description: '', business_type: '' });
+  const [savingProfile, setSavingProfile] = useState(false);
 
   const headers: Record<string, string> = jwt ? { Authorization: `Bearer ${jwt}` } : {};
 
@@ -39,7 +42,35 @@ export default function MyBusiness({ token, jwt }: { token: string; jwt?: string
     }).finally(() => setLoading(false));
   }, [token, jwt]);
 
-  if (loading) return <div className="animate-pulse space-y-4">{[...Array(4)].map((_,i)=><div key={i} className="h-24 bg-white rounded-xl"/>)}</div>;
+  const startEdit = () => {
+    setEditForm({
+      pyme_name: pymeData?.pyme_name || '',
+      nit: pymeData?.nit || '',
+      address: pymeData?.address || '',
+      description: pymeData?.description || '',
+      business_type: pymeData?.business_type || '',
+    });
+    setEditing(true);
+  };
+
+  const cancelEdit = () => setEditing(false);
+
+  const saveProfile = async () => {
+    setSavingProfile(true);
+    try {
+      const q = jwt ? '' : `?token=${token}`;
+      await fetch(`${API_URL}/api/profile${q}`, {
+        method: 'PATCH', headers: { ...headers, 'Content-Type': 'application/json' },
+        body: JSON.stringify(editForm),
+      });
+      const r = await fetch(`${API_URL}/api/tenant-info${q}`, { headers });
+      setPymeData(await r.json());
+      setEditing(false);
+    } catch { /* silent */ }
+    finally { setSavingProfile(false); }
+  };
+
+  if (loading) return
 
   const totalProducts = stats?.total_products || 0;
   const totalValue = stats?.total_value || 0;
@@ -55,12 +86,53 @@ export default function MyBusiness({ token, jwt }: { token: string; jwt?: string
           <div className="flex-1">
             <h2 className="text-xl font-bold text-gray-900">{pymeData?.pyme_name || token}</h2>
             <p className="text-sm text-gray-500">{pymeData?.business_type || 'PyME'} · Activo desde {pymeData?.created_at?.slice(0, 10) || 'hoy'}</p>
-            {pymeData?.nit && <p className="text-xs text-gray-400 mt-0.5">NIT: {pymeData.nit}</p>}
-            {pymeData?.address && <p className="text-xs text-gray-400">📍 {pymeData.address}</p>}
-            {pymeData?.description && <p className="text-xs text-gray-400 mt-1 italic">"{pymeData.description}"</p>}
+            {!editing && (
+              <>
+                {pymeData?.nit && <p className="text-xs text-gray-400 mt-0.5">NIT: {pymeData.nit}</p>}
+                {pymeData?.address && <p className="text-xs text-gray-400">📍 {pymeData.address}</p>}
+                {pymeData?.description && <p className="text-xs text-gray-400 mt-1 italic">"{pymeData.description}"</p>}
+              </>
+            )}
           </div>
-          <span className="px-3 py-1 bg-indigo-100 text-indigo-700 text-xs font-medium rounded-full">Token: {token.slice(0, 6)}</span>
+          {!editing ? (
+            <button onClick={startEdit}
+              className="px-3 py-1.5 text-xs font-medium text-indigo-600 bg-indigo-50 rounded-lg hover:bg-indigo-100 flex items-center gap-1">
+              <Edit3 className="w-3 h-3" /> Editar
+            </button>
+          ) : (
+            <span className="px-3 py-1 bg-indigo-100 text-indigo-700 text-xs font-medium rounded-full">Token: {token.slice(0, 6)}</span>
+          )}
         </div>
+        {editing && (
+          <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 space-y-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <input type="text" placeholder="Nombre del negocio" value={editForm.pyme_name}
+                onChange={e => setEditForm({...editForm, pyme_name: e.target.value})}
+                className="px-3 py-1.5 border border-gray-200 rounded-lg text-xs" />
+              <input type="text" placeholder="Tipo de negocio" value={editForm.business_type}
+                onChange={e => setEditForm({...editForm, business_type: e.target.value})}
+                className="px-3 py-1.5 border border-gray-200 rounded-lg text-xs" />
+              <input type="text" placeholder="NIT" value={editForm.nit}
+                onChange={e => setEditForm({...editForm, nit: e.target.value})}
+                className="px-3 py-1.5 border border-gray-200 rounded-lg text-xs" />
+              <input type="text" placeholder="Dirección" value={editForm.address}
+                onChange={e => setEditForm({...editForm, address: e.target.value})}
+                className="px-3 py-1.5 border border-gray-200 rounded-lg text-xs" />
+            </div>
+            <input type="text" placeholder="Descripción" value={editForm.description}
+              onChange={e => setEditForm({...editForm, description: e.target.value})}
+              className="w-full px-3 py-1.5 border border-gray-200 rounded-lg text-xs" />
+            <div className="flex gap-2 justify-end">
+              <button onClick={cancelEdit} className="px-3 py-1.5 text-xs text-gray-500 hover:bg-gray-100 rounded-lg flex items-center gap-1">
+                <XIcon className="w-3 h-3" /> Cancelar
+              </button>
+              <button onClick={saveProfile} disabled={savingProfile}
+                className="px-3 py-1.5 text-xs font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-500 disabled:opacity-40 flex items-center gap-1">
+                <Check className="w-3 h-3" /> {savingProfile ? 'Guardando...' : 'Guardar'}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* KPI Grid */}

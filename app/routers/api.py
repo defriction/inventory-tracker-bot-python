@@ -1182,3 +1182,44 @@ async def get_tenant_info(
         "description": tenant.get("description", ""),
         "created_at": tenant.get("created_at", ""),
     }
+
+
+# ── Profile self-service ──
+
+class ProfileUpdateSchema(BaseModel):
+    pyme_name: Optional[str] = None
+    business_type: Optional[str] = None
+    nit: Optional[str] = None
+    address: Optional[str] = None
+    description: Optional[str] = None
+
+
+@router.patch('/profile')
+async def update_profile(
+    updates: ProfileUpdateSchema,
+    token: str = Query(...),
+    inventory_service: InventoryService = Depends(get_inventory_service)
+):
+    """PyME updates its own profile data (SQLAlchemy)."""
+    from app.models_admin import get_admin_session, TenantProfile
+    
+    changed = updates.dict(exclude_unset=True)
+    if not changed:
+        return {"status": "no_changes"}
+    
+    session = get_admin_session()
+    try:
+        tenant = session.query(TenantProfile).filter(TenantProfile.token == token).first()
+        if not tenant:
+            raise HTTPException(status_code=404, detail="PyME no encontrada")
+        for col, val in changed.items():
+            setattr(tenant, col, val)
+        session.commit()
+        return {"status": "updated"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        session.close()
