@@ -439,7 +439,22 @@ class InventoryService:
                     params
                 )
 
-        return f"✅ *Producto Actualizado*\n🛒 {self._escape(current_name)}\n🔧 Campos modificados: {len(updates) - 1}"
+        return f"✅ *Producto Actualizado*\\n🛒 {self._escape(current_name)}\\n🔧 Campos modificados: {len(updates) - 1}"
+
+    # ── Custom fields ──
+
+    def _save_custom_field(self, sku: str, column_name: str, value):
+        """Save a custom field value for a product."""
+        with get_conn(self.tenant_id) as conn:
+            col = conn.execute(
+                "SELECT id FROM custom_columns WHERE name = ?", (column_name,)
+            ).fetchone()
+            if col:
+                conn.execute(
+                    "INSERT OR REPLACE INTO product_custom_values (product_sku, column_id, value) VALUES (?, ?, ?)",
+                    (sku, col['id'], str(value) if value is not None else None)
+                )
+                conn.commit()
 
     # ── List / report ──
 
