@@ -186,9 +186,13 @@ async def update_product(
     import logging
     log = logging.getLogger('crud.product')
     try:
+        log.info(f"PATCH START | sku={sku}")
         row_idx, current_name = inventory_service._find_product_row_by_keyword(sku, exact_match=True)
         if not row_idx:
+            log.warning(f"PATCH NOT FOUND | sku={sku}")
             raise HTTPException(status_code=404, detail="Producto no encontrado")
+        
+        log.info(f"PATCH FOUND | sku={sku} | name={current_name} | row={row_idx}")
         
         # Mapeo de campos a índices de columna (1-based)
         field_to_col = {
@@ -205,14 +209,15 @@ async def update_product(
         }
         
         update_data = updates.dict(exclude_unset=True)
-        log.info(f"UPDATE FIELDS | sku={sku} | row={row_idx} | changes={list(update_data.keys())}")
+        log.info(f"PATCH FIELDS | sku={sku} | raw_body={update_data}")
         
         for field, value in update_data.items():
             if field in field_to_col and value is not None:
                 col = field_to_col[field]
+                log.info(f"PATCH CELL | sku={sku} | field={field} | col={col} | value={value!r}")
                 inventory_service.inventory_sheet.update_cell(row_idx, col, value)
         
-        log.info(f"UPDATE OK | sku={sku}")
+        log.info(f"PATCH OK | sku={sku} | fields_updated={list(update_data.keys())}")
         return {"status": "updated", "sku": sku, "changes": list(update_data.keys())}
         
     except HTTPException:
