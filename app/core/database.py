@@ -99,6 +99,20 @@ def init_admin_db():
             created_at TEXT DEFAULT (datetime('now', 'localtime'))
         )
     """)
+    # Ensure extra columns exist (safe idempotent ALTER)
+    for col, col_type in [
+        ("telegram_id", "TEXT DEFAULT ''"),
+        ("tenant_id", "TEXT DEFAULT ''"),
+        ("sheet_id", "TEXT DEFAULT ''"),
+        ("business_type", "TEXT DEFAULT ''"),
+        ("nit", "TEXT DEFAULT ''"),
+        ("address", "TEXT DEFAULT ''"),
+        ("description", "TEXT DEFAULT ''"),
+    ]:
+        try:
+            conn.execute(f"ALTER TABLE tenants ADD COLUMN {col} {col_type}")
+        except sqlite3.OperationalError:
+            pass
     conn.execute("""
         CREATE TABLE IF NOT EXISTS telegram_users (
             telegram_id TEXT PRIMARY KEY,

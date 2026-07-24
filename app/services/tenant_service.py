@@ -24,7 +24,7 @@ class TenantService:
         try:
             with get_admin_conn() as conn:
                 row = conn.execute(
-                    "SELECT tenant_id, pyme_name, sheet_id, token FROM tenants WHERE token = ?",
+                    "SELECT tenant_id, pyme_name, sheet_id, token, business_type, nit, address, description, created_at FROM tenants WHERE token = ?",
                     (token,)
                 ).fetchone()
                 if row:
@@ -33,6 +33,11 @@ class TenantService:
                         "pyme_name": row["pyme_name"],
                         "sheet_id": row["sheet_id"] or "",
                         "token": row["token"],
+                        "business_type": row["business_type"] or "",
+                        "nit": row["nit"] or "",
+                        "address": row["address"] or "",
+                        "description": row["description"] or "",
+                        "created_at": row["created_at"] or "",
                     }
             return None
         except Exception:
@@ -142,7 +147,7 @@ class TenantService:
         try:
             with get_admin_conn() as conn:
                 rows = conn.execute(
-                    "SELECT tenant_id, pyme_name, token, telegram_id, business_type, created_at FROM tenants ORDER BY created_at DESC"
+                    "SELECT tenant_id, pyme_name, token, telegram_id, business_type, nit, address, description, created_at FROM tenants ORDER BY created_at DESC"
                 ).fetchall()
             return [
                 {
@@ -151,6 +156,9 @@ class TenantService:
                     "token": r["token"],
                     "telegram_id": r["telegram_id"] or "",
                     "business_type": r["business_type"] or "",
+                    "nit": r["nit"] or "",
+                    "address": r["address"] or "",
+                    "description": r["description"] or "",
                     "created_at": r["created_at"] or "",
                 }
                 for r in rows

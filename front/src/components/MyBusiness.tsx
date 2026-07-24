@@ -55,6 +55,9 @@ export default function MyBusiness({ token, jwt }: { token: string; jwt?: string
           <div className="flex-1">
             <h2 className="text-xl font-bold text-gray-900">{pymeData?.pyme_name || token}</h2>
             <p className="text-sm text-gray-500">{pymeData?.business_type || 'PyME'} · Activo desde {pymeData?.created_at?.slice(0, 10) || 'hoy'}</p>
+            {pymeData?.nit && <p className="text-xs text-gray-400 mt-0.5">NIT: {pymeData.nit}</p>}
+            {pymeData?.address && <p className="text-xs text-gray-400">📍 {pymeData.address}</p>}
+            {pymeData?.description && <p className="text-xs text-gray-400 mt-1 italic">"{pymeData.description}"</p>}
           </div>
           <span className="px-3 py-1 bg-indigo-100 text-indigo-700 text-xs font-medium rounded-full">Token: {token.slice(0, 6)}</span>
         </div>

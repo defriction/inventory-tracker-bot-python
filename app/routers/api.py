@@ -1177,4 +1177,8 @@ async def get_tenant_info(
         "pyme_name": tenant.get("pyme_name", token),
         "business_type": tenant.get("business_type", "PyME"),
         "tenant_id": tenant.get("id", ""),
+        "nit": tenant.get("nit", ""),
+        "address": tenant.get("address", ""),
+        "description": tenant.get("description", ""),
+        "created_at": tenant.get("created_at", ""),
     }
