@@ -77,7 +77,6 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
 
     try {
       await apiUpdateProduct(token, { sku, ...data }, jwt);
-      await get().fetchProducts(token, jwt); // Sync with server
       toast.success('Producto actualizado');
     } catch {
       // Rollback
@@ -92,7 +91,6 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
 
     try {
       await apiDeleteProduct(token, sku, jwt);
-      await get().fetchProducts(token, jwt); // Sync with server
       toast.success(`${name} eliminado`);
     } catch {
       // Rollback
