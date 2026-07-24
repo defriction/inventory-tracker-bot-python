@@ -1,12 +1,10 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { Edit3, Trash2, X } from 'lucide-react';
+import { Edit3, Trash2, X, Plus } from 'lucide-react';
 import { Product } from '@/types';
-import { getInventory, updateProduct, deleteProduct, createProduct } from '@/lib/api';
 import { confirmToast } from '@/lib/confirm';
-import toast from 'react-hot-toast';
-import { Plus } from 'lucide-react';
+import { useInventoryStore } from '@/stores/inventoryStore';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -14,9 +12,11 @@ type SortField = 'name' | 'stock' | 'price' | 'category' | 'expiration_date';
 type SortDir = 'asc' | 'desc';
 
 export default function InventoryTable({ token, jwt }: { token: string; jwt?: string }) {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const {
+    products, loading, error, highlightSku,
+    fetchProducts, createProduct, updateProduct, deleteProduct,
+  } = useInventoryStore();
+
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [stockFilter, setStockFilter] = useState('');
@@ -29,19 +29,12 @@ export default function InventoryTable({ token, jwt }: { token: string; jwt?: st
   const [saving, setSaving] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const [newProduct, setNewProduct] = useState({ name: '', category: 'General', stock: 0, unit: 'UND', cost: 0, price: 0, expiration_date: '', location: '', invima: '', lote: '', sku: '' });
-  const [highlightSku, setHighlightSku] = useState('');
 
   useEffect(() => {
-    fetchData();
-    const interval = setInterval(fetchData, 60000);
+    fetchProducts(token, jwt);
+    const interval = setInterval(() => fetchProducts(token, jwt), 60000);
     return () => clearInterval(interval);
   }, [token, jwt]);
-
-  const fetchData = () => {
-    getInventory(token, jwt)
-      .then((data) => { setProducts(data.products); setLoading(false); })
-      .catch((err) => { setError(err.message); setLoading(false); });
-  };
 
   const startEdit = (p: Product) => {
     setEditing(p);
@@ -51,64 +44,28 @@ export default function InventoryTable({ token, jwt }: { token: string; jwt?: st
   const saveEdit = async () => {
     if (!editing) return;
     setSaving(true);
-    try {
-      await updateProduct(token, { sku: editing.sku, ...editForm }, jwt);
-      setEditing(null);
-      fetchData();
-      toast.success('Producto actualizado');
-    } catch { toast.error('Error al guardar'); }
-    finally { setSaving(false); }
+    await updateProduct(token, editing.sku, editForm, jwt);
+    setEditing(null);
+    setSaving(false);
   };
 
   const handleDelete = async (sku: string, name: string) => {
     const ok = await confirmToast(`¿Eliminar "${name}"?`);
     if (!ok) return;
-    try {
-      await deleteProduct(token, sku, jwt);
-      fetchData();
-      toast.success(`${name} eliminado`);
-    } catch { toast.error('Error al eliminar'); }
+    await deleteProduct(token, sku, name, jwt);
   };
 
   const handleCreate = async () => {
     if (!newProduct.name) return;
     setSaving(true);
-    const tempSku = newProduct.sku || 'NUEVO-' + Date.now().toString(36);
-    // Optimistic: add to list immediately
-    const optimistic: Product = {
-      uuid: 'temp-' + Date.now(),
-      sku: tempSku,
-      name: newProduct.name,
-      category: newProduct.category,
-      stock: newProduct.stock,
-      unit: newProduct.unit,
-      cost: newProduct.cost,
-      price: newProduct.price,
-      expiration_date: newProduct.expiration_date,
-      location: newProduct.location,
-      invima: newProduct.invima,
-      lote: newProduct.lote,
-    };
-    setProducts(prev => [optimistic, ...prev]);
-    setHighlightSku(tempSku);
+    await createProduct(token, newProduct, jwt);
     setShowCreate(false);
     setNewProduct({ name: '', category: 'General', stock: 0, unit: 'UND', cost: 0, price: 0, expiration_date: '', location: '', invima: '', lote: '', sku: '' });
     setSearch('');
     setCategoryFilter('');
     setStockFilter('');
     setPage(1);
-    try {
-      await createProduct(token, newProduct, jwt);
-      fetchData(); // Replace optimistic with real data
-      toast.success('Producto creado');
-    } catch {
-      toast.error('Error al crear');
-      fetchData(); // Remove optimistic on failure
-    }
-    finally {
-      setSaving(false);
-      setTimeout(() => setHighlightSku(''), 2000);
-    }
+    setSaving(false);
   };
 
   // Extraer categorias unicas
@@ -203,7 +160,7 @@ export default function InventoryTable({ token, jwt }: { token: string; jwt?: st
       <div className="rounded-xl border border-red-200 bg-red-50 p-8 text-center">
         <span className="text-3xl block mb-3">⚠️</span>
         <p className="text-sm text-red-600 mb-4">{error}</p>
-        <button onClick={() => { setError(''); setLoading(true); fetchData(); }}
+        <button onClick={() => fetchProducts(token, jwt)}
           className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-xl hover:bg-indigo-500 transition-colors">
           Reintentar
         </button>
