@@ -20,11 +20,11 @@ import PwaInstallBanner from '@/components/PwaInstallBanner';
 type Tab = 'dashboard' | 'inventory' | 'analytics' | 'orders' | 'po_builder' | 'usage' | 'admin' | 'my_business';
 
 const navItems: { id: Tab; label: string; icon: any; adminOnly?: boolean }[] = [
-  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { id: 'dashboard', label: 'Inicio', icon: LayoutDashboard },
   { id: 'inventory', label: 'Inventario', icon: Package },
-  { id: 'analytics', label: 'Analytics', icon: BarChart3 },
+  { id: 'analytics', label: 'Analítica', icon: BarChart3 },
   { id: 'orders', label: 'Pedidos', icon: Truck },
-  { id: 'po_builder', label: 'Armar Pedido', icon: FileText },
+  { id: 'po_builder', label: 'Pedido', icon: FileText },
   { id: 'usage', label: 'Uso', icon: Activity, adminOnly: true },
   { id: 'admin', label: 'Admin', icon: Shield, adminOnly: true },
   { id: 'my_business', label: 'Mi PyME', icon: Building },
