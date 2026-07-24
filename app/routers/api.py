@@ -1080,3 +1080,73 @@ async def create_remision(
                                         -item.quantity, "Web", f"Remision {uid}")
 
     return {"status": "created", "id": remision_id, "uid": uid}
+
+
+@router.get('/remisiones/{remision_id}/pdf')
+async def remision_pdf(
+    remision_id: int,
+    inventory_service: InventoryService = Depends(get_inventory_service)
+):
+    """Genera PDF de una remision."""
+    from app.database_sa import get_session
+    from app.models import Remision
+    from io import BytesIO
+    from fastapi.responses import StreamingResponse
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib import colors
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+    from reportlab.lib.styles import getSampleStyleSheet
+
+    session = get_session(inventory_service.tenant_id)
+    try:
+        r = session.query(Remision).filter(Remision.id == remision_id).first()
+        if not r:
+            raise HTTPException(status_code=404, detail="Remision no encontrada")
+
+        buffer = BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=30, bottomMargin=30)
+        styles = getSampleStyleSheet()
+        elements = []
+
+        # Header
+        client_name = r.client.name if r.client else "Sin cliente"
+        elements.append(Paragraph(f"<b>REMISION {r.uid}</b>", styles["Title"]))
+        elements.append(Spacer(1, 6))
+        elements.append(Paragraph(f"Cliente: {client_name}", styles["Normal"]))
+        elements.append(Paragraph(f"Fecha: {str(r.created_at)[:16]}", styles["Normal"]))
+        if r.notes:
+            elements.append(Paragraph(f"Notas: {r.notes}", styles["Normal"]))
+        elements.append(Spacer(1, 12))
+
+        # Items table
+        data = [["Producto", "SKU", "Cant.", "Unit.", "Precio", "Subtotal"]]
+        for item in r.items:
+            data.append([
+                item.product_name, item.product_sku, str(item.quantity),
+                item.unit, f"${item.unit_price:,.0f}", f"${item.subtotal:,.0f}"
+            ])
+        data.append(["", "", "", "", "TOTAL", f"${r.total_amount:,.0f}"])
+
+        table = Table(data, colWidths=[140, 70, 50, 40, 70, 70])
+        table.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#4F46E5")),
+            ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+            ("FONTSIZE", (0, 0), (-1, -1), 9),
+            ("ALIGN", (2, 1), (3, -1), "CENTER"),
+            ("ALIGN", (4, 1), (-1, -1), "RIGHT"),
+            ("GRID", (0, 0), (-1, -2), 0.5, colors.grey),
+            ("BACKGROUND", (0, -1), (-1, -1), colors.HexColor("#EEF2FF")),
+            ("FONTNAME", (0, -1), (-1, -1), "Helvetica-Bold"),
+        ]))
+        elements.append(table)
+
+        doc.build(elements)
+        buffer.seek(0)
+
+        return StreamingResponse(
+            buffer,
+            media_type="application/pdf",
+            headers={"Content-Disposition": f"attachment; filename=remision-{r.uid}.pdf"}
+        )
+    finally:
+        session.close()

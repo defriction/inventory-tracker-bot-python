@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { FileText, Truck, Users, X, Plus } from 'lucide-react';
 import { Client, Product } from '@/types';
-import { getInventory, getClients, createClient, updateClient, deleteClient, createRemision } from '@/lib/api';
+import { getInventory, getClients, createClient, updateClient, deleteClient, createRemision, getRemisiones } from '@/lib/api';
 import { confirmToast } from '@/lib/confirm';
 import toast from 'react-hot-toast';
 import PurchaseOrderBuilder from './PurchaseOrderBuilder';
@@ -28,6 +28,7 @@ export default function OrderBuilderTabs({ token, jwt }: { token: string; jwt?: 
   const [clientId, setClientId] = useState<number | null>(null);
   const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
+  const [remisiones, setRemisiones] = useState<any[]>([]);
 
   // Client form
   const [showClientForm, setShowClientForm] = useState(false);
@@ -38,6 +39,7 @@ export default function OrderBuilderTabs({ token, jwt }: { token: string; jwt?: 
     if (activeTab === 'remision') {
       getInventory(token, jwt).then(d => setProducts(d.products));
       getClients(token, jwt).then(d => setClients(d.clients)).catch(() => {});
+      getRemisiones(token, jwt).then(d => setRemisiones(d.remisiones)).catch(() => {});
     }
   }, [activeTab, token, jwt]);
 
@@ -140,6 +142,7 @@ export default function OrderBuilderTabs({ token, jwt }: { token: string; jwt?: 
 
       {/* Remision Tab */}
       {activeTab === 'remision' && (
+        <>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Left: Products */}
           <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
@@ -274,6 +277,48 @@ export default function OrderBuilderTabs({ token, jwt }: { token: string; jwt?: 
             )}
           </div>
         </div>
+
+      {/* Remision History */}
+        {remisiones.length > 0 && (
+          <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden mt-4">
+            <div className="px-6 py-4 border-b border-gray-100">
+              <h3 className="text-sm font-semibold text-gray-800">Historial de Remisiones</h3>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-gray-50 bg-gray-50/50">
+                    <th className="text-left px-4 py-2 text-xs font-semibold text-gray-500">UID</th>
+                    <th className="text-left px-4 py-2 text-xs font-semibold text-gray-500">Cliente</th>
+                    <th className="text-center px-4 py-2 text-xs font-semibold text-gray-500">Items</th>
+                    <th className="text-right px-4 py-2 text-xs font-semibold text-gray-500">Total</th>
+                    <th className="text-left px-4 py-2 text-xs font-semibold text-gray-500 hidden md:table-cell">Fecha</th>
+                    <th className="text-center px-4 py-2 text-xs font-semibold text-gray-500">PDF</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {remisiones.map(r => (
+                    <tr key={r.id} className="hover:bg-gray-50/50">
+                      <td className="px-4 py-2 font-mono text-xs font-medium text-gray-800">{r.uid}</td>
+                      <td className="px-4 py-2 text-xs text-gray-600">{r.client_name}</td>
+                      <td className="px-4 py-2 text-center text-xs text-gray-500">{r.item_count}</td>
+                      <td className="px-4 py-2 text-right text-xs font-medium text-gray-800">${r.total_amount.toLocaleString()}</td>
+                      <td className="px-4 py-2 text-xs text-gray-400 hidden md:table-cell">{r.created_at?.slice(0, 10)}</td>
+                      <td className="px-4 py-2 text-center">
+                        <a href={`${process.env.NEXT_PUBLIC_API_URL || ''}/api/remisiones/${r.id}/pdf?token=${token}`}
+                          className="text-xs text-indigo-600 hover:text-indigo-500 font-medium"
+                          target="_blank" rel="noopener">
+                          📄 PDF
+                        </a>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </>
       )}
     </div>
   );
