@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { Edit3, Trash2, X } from 'lucide-react';
 import { Product } from '@/types';
 import { getInventory, updateProduct, deleteProduct } from '@/lib/api';
+import toast from 'react-hot-toast';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -54,7 +55,8 @@ export default function InventoryTable({ token, jwt }: { token: string; jwt?: st
       await updateProduct(token, { sku: editing.sku, ...editForm }, jwt);
       setEditing(null);
       fetchData();
-    } catch { alert('Error al guardar'); }
+      toast.success('Producto actualizado');
+    } catch { toast.error('Error al guardar'); }
     finally { setSaving(false); }
   };
 
@@ -63,7 +65,8 @@ export default function InventoryTable({ token, jwt }: { token: string; jwt?: st
     try {
       await deleteProduct(token, sku, jwt);
       fetchData();
-    } catch { alert('Error al eliminar'); }
+      toast.success(`${name} eliminado`);
+    } catch { toast.error('Error al eliminar'); }
   };
 
   const fetchData = () => {
