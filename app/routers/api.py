@@ -1056,6 +1056,7 @@ async def create_remision(
             session.add(ri)
 
         session.commit()
+        remision_id = remision.id
     except HTTPException:
         raise
     except Exception as e:
@@ -1078,4 +1079,4 @@ async def create_remision(
         inventory_service._log_movement("REMISION", item.product_sku, item.product_name,
                                         -item.quantity, "Web", f"Remision {uid}")
 
-    return {"status": "created", "id": remision.id, "uid": uid}
+    return {"status": "created", "id": remision_id, "uid": uid}
