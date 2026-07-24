@@ -127,7 +127,7 @@ async def process_telegram_update(data: dict):
             if text.startswith("/conectar"):
                 parts = text.split()
                 if len(parts) < 2:
-                    await send_telegram_message(chat_id, "Debes enviar el token. Ejemplo: `/conectar AB123`")
+                    await send_telegram_message(chat_id, "Debes enviar el token\\. Ejemplo: `/conectar AB123`")
                     return
 
                 token = parts[1].strip()
