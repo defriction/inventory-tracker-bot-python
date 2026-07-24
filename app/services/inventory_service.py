@@ -181,6 +181,27 @@ class InventoryService:
                 ).fetchone()
                 if row:
                     return row[0], row[1]
+                
+                # Fallback: word-level match
+                words = query_norm.split()
+                if len(words) > 1:
+                    for word in words:
+                        if len(word) < 3:
+                            continue
+                        row = conn.execute(
+                            "SELECT rowid, name FROM products WHERE lower(name) LIKE ? LIMIT 1",
+                            (f'%{word}%',)
+                        ).fetchone()
+                        if row:
+                            return row[0], row[1]
+                
+                # Fallback: reverse match — product name contained in query
+                row = conn.execute(
+                    "SELECT rowid, name FROM products WHERE ? LIKE '%' || lower(name) || '%' LIMIT 1",
+                    (query_norm,)
+                ).fetchone()
+                if row:
+                    return row[0], row[1]
 
         return None, None
 
@@ -208,10 +229,33 @@ class InventoryService:
                 return [{'row_idx': row[0], 'sku': row[1], 'name': row[2], 'category': row[3], 'stock': row[4]}]
 
             # Partial name match (for fuzzy)
+            pattern = f'%{query_norm}%'
             rows = conn.execute(
                 "SELECT rowid, sku, name, category, stock FROM products WHERE lower(name) LIKE ? LIMIT 10",
-                (f'%{query_norm}%',)
+                (pattern,)
             ).fetchall()
+            
+            # Fallback: try matching each word of query individually
+            if not rows:
+                words = query_norm.split()
+                if len(words) > 1:
+                    for word in words:
+                        if len(word) < 3:
+                            continue
+                        rows = conn.execute(
+                            "SELECT rowid, sku, name, category, stock FROM products WHERE lower(name) LIKE ? LIMIT 5",
+                            (f'%{word}%',)
+                        ).fetchall()
+                        if rows:
+                            break
+            
+            # Fallback: try reverse match — product name contained in query
+            if not rows:
+                rows = conn.execute(
+                    "SELECT rowid, sku, name, category, stock FROM products WHERE ? LIKE '%' || lower(name) || '%' LIMIT 5",
+                    (query_norm,)
+                ).fetchall()
+            
             return [
                 {'row_idx': r[0], 'sku': r[1], 'name': r[2], 'category': r[3], 'stock': r[4]}
                 for r in rows
