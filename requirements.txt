@@ -8,6 +8,5 @@ pandas
 numpy
 scipy
 httpx
-redis
 reportlab
 PyJWT

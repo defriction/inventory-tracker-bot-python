@@ -6,7 +6,6 @@ from app.services.inventory_service import InventoryService
 from app.services.analytics_service import AnalyticsService
 from app.services.factory import get_inventory_service as _get_inventory_service
 from app.core.config import settings
-from app.core.cache import get_cache, set_cache
 from app.core.auth import get_current_tenant
 
 router = APIRouter(
@@ -100,11 +99,6 @@ async def get_inventory(
     inventory_service: InventoryService = Depends(get_inventory_service)
 ):
     """Obtiene todos los productos del inventario."""
-    cache_key = f"inventory:{token}"
-    cached = get_cache(cache_key, ttl=60)
-    if cached is not None:
-        return cached
-
     try:
         rows = inventory_service.inventory_sheet.get_all_values()
         if not rows or len(rows) < 2:
@@ -133,7 +127,6 @@ async def get_inventory(
             products.append(product)
         
         result = {"products": products, "total": len(products)}
-        set_cache(cache_key, result, ttl=30)
         return result
         
     except Exception as e:
@@ -256,11 +249,6 @@ async def get_movements(
     inventory_service: InventoryService = Depends(get_inventory_service)
 ):
     """Historial de movimientos."""
-    cache_key = f"movements:{token}:{limit}"
-    cached = get_cache(cache_key, ttl=30)
-    if cached is not None:
-        return cached
-
     try:
         rows = inventory_service.history_sheet.get_all_values()
         if not rows or len(rows) < 2:
@@ -287,7 +275,6 @@ async def get_movements(
         limited = movements[:limit]
         
         result = {"movements": limited, "total": len(movements)}
-        set_cache(cache_key, result, ttl=30)
         return result
         
     except Exception as e:
@@ -301,11 +288,6 @@ async def get_stats(
     inventory_service: InventoryService = Depends(get_inventory_service)
 ):
     """Estadisticas agregadas."""
-    cache_key = f"stats:{token}"
-    cached = get_cache(cache_key, ttl=30)
-    if cached is not None:
-        return cached
-
     try:
         rows = inventory_service.inventory_sheet.get_all_values()
         if not rows or len(rows) < 2:
@@ -340,7 +322,6 @@ async def get_stats(
             "low_stock_count": low_stock_count,
             "expiring_count": expiring_count,
         }
-        set_cache(cache_key, result, ttl=30)
         return result
     except Exception as e:
         import traceback, logging
@@ -354,11 +335,6 @@ async def get_alerts(
     inventory_service: InventoryService = Depends(get_inventory_service)
 ):
     """Productos con stock bajo o proximos a vencer."""
-    cache_key = f"alerts:{token}"
-    cached = get_cache(cache_key, ttl=30)
-    if cached is not None:
-        return cached
-
     try:
         rows = inventory_service.inventory_sheet.get_all_values()
         if not rows or len(rows) < 2:
@@ -392,7 +368,6 @@ async def get_alerts(
                     pass
 
         result = {"low_stock": low_stock, "expiring": expiring}
-        set_cache(cache_key, result, ttl=30)
         return result
     except Exception as e:
         import traceback, logging
@@ -406,11 +381,6 @@ async def get_analytics(
     inventory_service: InventoryService = Depends(get_inventory_service)
 ):
     """Analitica completa."""
-    cache_key = f"analytics:{token}"
-    cached = get_cache(cache_key, ttl=60)
-    if cached is not None:
-        return cached
-
     try:
         # Cargar datos
         rows = inventory_service.inventory_sheet.get_all_values()
@@ -599,7 +569,6 @@ async def get_analytics(
             "advanced": AnalyticsService(products, movements).full_report(),
         }
 
-        set_cache(cache_key, result, ttl=60)
         return result
 
     except Exception as e:
@@ -644,16 +613,6 @@ async def receive_order(
         inventory_service._log_movement("COMPRA", item.sku, real_name, item.quantity, data.user_name, "Recepcion de pedido")
         messages.append(f"✅ {real_name}: {current_stock} → {new_stock}")
 
-    # Invalidate caches
-    from app.core.cache import invalidate_pattern
-    invalidate_pattern(f"*:{token}*")
 
     return {"status": "ok", "messages": messages}
 
-
-@router.post('/invalidate-cache')
-async def invalidate_cache(token: str = Query(...)):
-    """Fuerza limpieza de cache para refrescar datos."""
-    from app.core.cache import invalidate_pattern
-    count = invalidate_pattern(f"*:{token}*")
-    return {"status": "ok", "keys_invalidated": count}
