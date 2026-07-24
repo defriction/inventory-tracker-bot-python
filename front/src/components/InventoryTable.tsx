@@ -32,21 +32,16 @@ export default function InventoryTable({ token, jwt }: { token: string; jwt?: st
   const [highlightSku, setHighlightSku] = useState('');
 
   useEffect(() => {
-    const fetchData = () => {
-      getInventory(token, jwt)
-        .then((data) => {
-          setProducts(data.products);
-          setLoading(false);
-        })
-        .catch((err) => {
-          setError(err.message);
-          setLoading(false);
-        });
-    };
     fetchData();
     const interval = setInterval(fetchData, 60000);
     return () => clearInterval(interval);
   }, [token, jwt]);
+
+  const fetchData = () => {
+    getInventory(token, jwt)
+      .then((data) => { setProducts(data.products); setLoading(false); })
+      .catch((err) => { setError(err.message); setLoading(false); });
+  };
 
   const startEdit = (p: Product) => {
     setEditing(p);
@@ -73,12 +68,6 @@ export default function InventoryTable({ token, jwt }: { token: string; jwt?: st
       fetchData();
       toast.success(`${name} eliminado`);
     } catch { toast.error('Error al eliminar'); }
-  };
-
-  const fetchData = () => {
-    getInventory(token, jwt)
-      .then((data) => { setProducts(data.products); setLoading(false); })
-      .catch((err) => { setError(err.message); setLoading(false); });
   };
 
   const handleCreate = async () => {
