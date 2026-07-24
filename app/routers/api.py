@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Query, Depends
+from fastapi import APIRouter, HTTPException, Query, Depends, Request
 from pydantic import BaseModel
 from typing import Optional, List
 import datetime
@@ -17,6 +17,7 @@ router = APIRouter(
 # --- Schemas ---
 
 class ProductSchema(BaseModel):
+    model_config = {"extra": "allow"}
     uuid: str = ""
     sku: str = ""
     name: str = ""
@@ -135,6 +136,19 @@ async def get_inventory(
             products.append(product)
         
         result = {"products": products, "total": len(products)}
+        
+        # Merge custom values
+        try:
+            custom_cols = _load_custom_columns(inventory_service.tenant_id)
+            if custom_cols:
+                for p in result["products"]:
+                    cv = _load_custom_values(inventory_service.tenant_id, p["sku"])
+                    for col in custom_cols:
+                        p[col["name"]] = cv.get(col["name"], "")
+                result["custom_columns"] = custom_cols
+        except Exception:
+            pass  # custom columns are optional
+        
         return result
         
     except Exception as e:
@@ -180,10 +194,12 @@ async def update_product(
     sku: str,
     updates: ProductUpdateSchema,
     token: str = Query(...),
-    inventory_service: InventoryService = Depends(get_inventory_service)
+    inventory_service: InventoryService = Depends(get_inventory_service),
+    request: Request = None
 ):
     """Actualiza campos de un producto existente.
-    Solo actualiza los campos enviados en el body."""
+    Solo actualiza los campos enviados en el body.
+    Campos desconocidos se guardan como custom values."""
     import logging
     log = logging.getLogger('crud.product')
     try:
@@ -217,6 +233,19 @@ async def update_product(
                 col = field_to_col[field]
                 log.info(f"PATCH CELL | sku={sku} | field={field} | col={col} | value={value!r}")
                 inventory_service.inventory_sheet.update_cell(row_idx, col, value)
+        
+        # Handle custom fields from raw body
+        if request:
+            import json
+            try:
+                body = await request.json()
+                known = set(ProductUpdateSchema.__fields__.keys())
+                for key, val in body.items():
+                    if key not in known and key != 'sku':
+                        _save_custom_value(inventory_service.tenant_id, sku, key, val)
+                        log.info(f"PATCH CUSTOM | sku={sku} | field={key} | value={val!r}")
+            except Exception:
+                pass
         
         log.info(f"PATCH OK | sku={sku} | fields_updated={list(update_data.keys())}")
         return {"status": "updated", "sku": sku, "changes": list(update_data.keys())}
@@ -708,4 +737,96 @@ async def delete_supplier(
         conn.execute("DELETE FROM suppliers WHERE id = ?", (supplier_id,))
         conn.commit()
     return {"status": "deleted"}
+
+
+# ── Custom Columns ──
+
+class CustomColumnSchema(BaseModel):
+    name: str
+    col_type: str = "text"  # text, number, date
+
+
+@router.get('/custom-columns')
+async def list_custom_columns(
+    inventory_service: InventoryService = Depends(get_inventory_service)
+):
+    """Lista las columnas personalizadas del tenant."""
+    with get_conn(inventory_service.tenant_id) as conn:
+        rows = conn.execute(
+            "SELECT id, name, col_type, created_at FROM custom_columns ORDER BY id"
+        ).fetchall()
+    return {"columns": [dict(r) for r in rows]}
+
+
+@router.post('/custom-columns')
+async def create_custom_column(
+    data: CustomColumnSchema,
+    inventory_service: InventoryService = Depends(get_inventory_service)
+):
+    """Crea una nueva columna personalizada."""
+    with get_conn(inventory_service.tenant_id) as conn:
+        existing = conn.execute(
+            "SELECT id FROM custom_columns WHERE name = ?", (data.name,)
+        ).fetchone()
+        if existing:
+            raise HTTPException(status_code=409, detail="Ya existe una columna con ese nombre")
+        cur = conn.execute(
+            "INSERT INTO custom_columns (name, col_type) VALUES (?, ?)",
+            (data.name, data.col_type)
+        )
+        conn.commit()
+    return {"status": "created", "id": cur.lastrowid}
+
+
+@router.delete('/custom-columns/{column_id}')
+async def delete_custom_column(
+    column_id: int,
+    inventory_service: InventoryService = Depends(get_inventory_service)
+):
+    """Elimina una columna personalizada y todos sus valores."""
+    with get_conn(inventory_service.tenant_id) as conn:
+        conn.execute("DELETE FROM product_custom_values WHERE column_id = ?", (column_id,))
+        conn.execute("DELETE FROM custom_columns WHERE id = ?", (column_id,))
+        conn.commit()
+    return {"status": "deleted"}
+
+
+# ── Helpers for custom values ──
+
+def _load_custom_columns(tenant_id: str) -> list[dict]:
+    with get_conn(tenant_id) as conn:
+        rows = conn.execute("SELECT id, name, col_type FROM custom_columns ORDER BY id").fetchall()
+    return [dict(r) for r in rows]
+
+
+def _load_custom_values(tenant_id: str, sku: str) -> dict:
+    with get_conn(tenant_id) as conn:
+        rows = conn.execute(
+            "SELECT cc.name, pcv.value FROM product_custom_values pcv "
+            "JOIN custom_columns cc ON cc.id = pcv.column_id "
+            "WHERE pcv.product_sku = ?", (sku,)
+        ).fetchall()
+    return {r['name']: r['value'] for r in rows}
+
+
+def _merge_custom_into_product(product: dict, custom_values: dict) -> dict:
+    result = dict(product)
+    result.update(custom_values)
+    return result
+
+
+def _save_custom_value(tenant_id: str, sku: str, column_name: str, value: any):
+    with get_conn(tenant_id) as conn:
+        col = conn.execute(
+            "SELECT id, col_type FROM custom_columns WHERE name = ?", (column_name,)
+        ).fetchone()
+        if not col:
+            return
+        # Type coercion
+        str_value = str(value) if value is not None else None
+        conn.execute(
+            "INSERT OR REPLACE INTO product_custom_values (product_sku, column_id, value) VALUES (?, ?, ?)",
+            (sku, col['id'], str_value)
+        )
+        conn.commit()
 

@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Product } from '@/types';
+import { Product, CustomColumn } from '@/types';
 import {
   getInventory, updateProduct as apiUpdateProduct,
   deleteProduct as apiDeleteProduct, createProduct as apiCreateProduct,
@@ -8,6 +8,7 @@ import toast from 'react-hot-toast';
 
 interface InventoryState {
   products: Product[];
+  customColumns: CustomColumn[];
   loading: boolean;
   error: string;
   highlightSku: string;
@@ -21,6 +22,7 @@ interface InventoryState {
 
 export const useInventoryStore = create<InventoryState>((set, get) => ({
   products: [],
+  customColumns: [],
   loading: true,
   error: '',
   highlightSku: '',
@@ -29,7 +31,7 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
     set({ loading: true, error: '' });
     try {
       const data = await getInventory(token, jwt);
-      set({ products: data.products, loading: false });
+      set({ products: data.products, customColumns: data.custom_columns || [], loading: false });
     } catch (err: any) {
       set({ error: err.message, loading: false });
     }

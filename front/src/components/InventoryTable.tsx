@@ -1,11 +1,12 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { Edit3, Trash2, X, Plus } from 'lucide-react';
-import { Product } from '@/types';
+import { Edit3, Trash2, X, Plus, Columns } from 'lucide-react';
+import { Product, CustomColumn } from '@/types';
 import { confirmToast } from '@/lib/confirm';
 import { useInventoryStore } from '@/stores/inventoryStore';
-
+import { createCustomColumn, deleteCustomColumn } from '@/lib/api';
+import toast from 'react-hot-toast';
 const ITEMS_PER_PAGE = 10;
 
 type SortField = 'name' | 'stock' | 'price' | 'category' | 'expiration_date';
@@ -13,9 +14,13 @@ type SortDir = 'asc' | 'desc';
 
 export default function InventoryTable({ token, jwt }: { token: string; jwt?: string }) {
   const {
-    products, loading, error, highlightSku,
+    products, loading, error, highlightSku, customColumns,
     fetchProducts, createProduct, updateProduct, deleteProduct,
   } = useInventoryStore();
+
+  const [showColumnModal, setShowColumnModal] = useState(false);
+  const [newColName, setNewColName] = useState('');
+  const [newColType, setNewColType] = useState('text');
 
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
@@ -208,6 +213,12 @@ export default function InventoryTable({ token, jwt }: { token: string; jwt?: st
             <Plus className="w-3.5 h-3.5" /> Nuevo
           </button>
 
+          {/* Custom Columns */}
+          <button onClick={() => setShowColumnModal(true)}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium bg-gray-50 border border-gray-200 text-gray-600 hover:bg-gray-100 transition-colors">
+            <Columns className="w-3.5 h-3.5" /> Columnas
+          </button>
+
           {/* Results count */}
           <span className="text-xs text-gray-400 ml-auto">
             {filtered.length} de {products.length} productos
@@ -294,6 +305,17 @@ export default function InventoryTable({ token, jwt }: { token: string; jwt?: st
               >
                 Vence <SortIcon field="expiration_date" />
               </th>
+              {customColumns.map(col => (
+                <th key={col.id} className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider hidden xl:table-cell">
+                  <div className="flex items-center gap-1 group">
+                    {col.name}
+                    <button onClick={() => { deleteCustomColumn(token, col.id, jwt).then(() => fetchProducts(token, jwt)).catch(() => {}); }}
+                      className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 ml-1">
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                </th>
+              ))}
               <th className="text-center px-3 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider w-20">
                 Acciones
               </th>
@@ -347,6 +369,11 @@ export default function InventoryTable({ token, jwt }: { token: string; jwt?: st
                     <span className="text-xs text-gray-300">—</span>
                   )}
                 </td>
+                {customColumns.map(col => (
+                  <td key={col.id} className="px-4 py-3.5 whitespace-nowrap hidden xl:table-cell">
+                    <span className="text-sm text-gray-600">{(product as any)[col.name] || <span className="text-gray-300">—</span>}</span>
+                  </td>
+                ))}
                 <td className="px-2 py-3.5 whitespace-nowrap text-center">
                   <div className="flex items-center justify-center gap-1">
                     <button onClick={() => startEdit(product)}
@@ -514,6 +541,15 @@ export default function InventoryTable({ token, jwt }: { token: string; jwt?: st
                 <input value={editForm.lote || ''} onChange={e => setEditForm({...editForm, lote: e.target.value})}
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500" />
               </div>
+              {customColumns.map(col => (
+                <div key={col.id}>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">{col.name} <span className="text-gray-300">({col.col_type})</span></label>
+                  <input type={col.col_type === 'number' ? 'number' : col.col_type === 'date' ? 'date' : 'text'}
+                    value={(editForm as any)[col.name] || ''}
+                    onChange={e => setEditForm({...editForm, [col.name]: col.col_type === 'number' ? (parseFloat(e.target.value) || 0) : e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500" />
+                </div>
+              ))}
               <button onClick={saveEdit} disabled={saving}
                 className="w-full py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-xl hover:bg-indigo-500 disabled:opacity-40 transition-colors">
                 {saving ? 'Guardando...' : 'Guardar Cambios'}
@@ -603,6 +639,58 @@ export default function InventoryTable({ token, jwt }: { token: string; jwt?: st
               <button onClick={handleCreate} disabled={!newProduct.name || saving}
                 className="w-full py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-xl hover:bg-indigo-500 disabled:opacity-40 transition-colors">
                 {saving ? 'Creando...' : 'Crear Producto'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Column Modal */}
+      {showColumnModal && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setShowColumnModal(false)} />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="text-lg font-bold text-gray-900">Columnas Personalizadas</h3>
+              <button onClick={() => setShowColumnModal(false)} className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            {/* Existing columns */}
+            {customColumns.length > 0 && (
+              <div className="space-y-1 mb-4 max-h-[150px] overflow-y-auto">
+                {customColumns.map(col => (
+                  <div key={col.id} className="flex items-center justify-between bg-gray-50 px-3 py-2 rounded-lg text-sm">
+                    <span><span className="font-medium text-gray-800">{col.name}</span> <span className="text-gray-400 text-xs">({col.col_type})</span></span>
+                    <button onClick={() => { deleteCustomColumn(token, col.id, jwt).then(() => fetchProducts(token, jwt)).catch(() => {}); }}
+                      className="text-red-400 hover:text-red-600 text-xs">Eliminar</button>
+                  </div>
+                ))}
+              </div>
+            )}
+            {/* Add new column */}
+            <div className="space-y-3">
+              <h4 className="text-xs font-semibold text-gray-500 uppercase">Nueva columna</h4>
+              <input type="text" placeholder="Nombre (ej: Color, Marca)" value={newColName}
+                onChange={e => setNewColName(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500" />
+              <select value={newColType} onChange={e => setNewColType(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500 bg-white">
+                <option value="text">Texto</option>
+                <option value="number">Numero</option>
+                <option value="date">Fecha</option>
+              </select>
+              <button onClick={async () => {
+                if (!newColName) return;
+                try {
+                  await createCustomColumn(token, { name: newColName, col_type: newColType }, jwt);
+                  await fetchProducts(token, jwt);
+                  setNewColName('');
+                  toast.success('Columna agregada');
+                } catch { toast.error('Error al crear columna'); }
+              }} disabled={!newColName}
+                className="w-full py-2 bg-indigo-600 text-white text-sm font-semibold rounded-xl hover:bg-indigo-500 disabled:opacity-40 transition-colors">
+                Agregar Columna
               </button>
             </div>
           </div>

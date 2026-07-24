@@ -23,6 +23,13 @@ export interface Tenant {
 export interface InventoryResponse {
   products: Product[];
   total: number;
+  custom_columns?: CustomColumn[];
+}
+
+export interface CustomColumn {
+  id: number;
+  name: string;
+  col_type: 'text' | 'number' | 'date';
 }
 
 export interface Stats {

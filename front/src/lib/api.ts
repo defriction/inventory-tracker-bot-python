@@ -25,7 +25,7 @@ async function fetchWithRetry(url: string, options: RequestInit = {}, retries = 
   throw new Error('Max retries');
 }
 
-import { Product, InventoryResponse, Stats, AlertsResponse, MovementsResponse, AnalyticsResponse, SuppliersResponse } from '@/types';
+import { Product, InventoryResponse, Stats, AlertsResponse, MovementsResponse, AnalyticsResponse, SuppliersResponse, CustomColumn } from '@/types';
 
 export async function getInventory(tenantToken: string, jwt?: string): Promise<InventoryResponse> {
   const res = await fetchWithRetry(`${API_URL}/api/inventory?token=${tenantToken}`, {
@@ -140,4 +140,35 @@ export async function getAnalytics(token: string, jwt?: string): Promise<Analyti
   });
   if (!res.ok) throw new Error('Error cargando analitica');
   return res.json();
+}
+
+// ── Custom Columns ──
+
+export async function getCustomColumns(token: string, jwt?: string): Promise<{columns: CustomColumn[]}> {
+  const res = await fetchWithRetry(`${API_URL}/api/custom-columns?token=${token}`, {
+    cache: 'no-store',
+    headers: authHeaders(jwt),
+  });
+  if (!res.ok) throw new Error('Error cargando columnas');
+  return res.json();
+}
+
+export async function createCustomColumn(token: string, data: {name: string; col_type: string}, jwt?: string): Promise<any> {
+  const res = await fetchWithRetry(`${API_URL}/api/custom-columns?token=${token}`, {
+    method: 'POST',
+    cache: 'no-store',
+    headers: authHeaders(jwt, { 'Content-Type': 'application/json' }),
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error('Error creando columna');
+  return res.json();
+}
+
+export async function deleteCustomColumn(token: string, id: number, jwt?: string): Promise<any> {
+  const res = await fetchWithRetry(`${API_URL}/api/custom-columns/${id}?token=${token}`, {
+    method: 'DELETE',
+    cache: 'no-store',
+    headers: authHeaders(jwt),
+  });
+  if (!res.ok) throw new Error('Error eliminando columna');
 }

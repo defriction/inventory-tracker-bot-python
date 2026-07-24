@@ -144,4 +144,21 @@ def init_tenant_db(tenant_id: str):
             updated_at TEXT DEFAULT (datetime('now', 'localtime'))
         )
     """)
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS custom_columns (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL UNIQUE,
+            col_type TEXT NOT NULL DEFAULT 'text' CHECK(col_type IN ('text','number','date')),
+            created_at TEXT DEFAULT (datetime('now', 'localtime'))
+        )
+    """)
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS product_custom_values (
+            product_sku TEXT NOT NULL,
+            column_id INTEGER NOT NULL,
+            value TEXT,
+            PRIMARY KEY (product_sku, column_id),
+            FOREIGN KEY (column_id) REFERENCES custom_columns(id) ON DELETE CASCADE
+        )
+    """)
     conn.commit()
