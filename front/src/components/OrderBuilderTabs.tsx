@@ -59,6 +59,11 @@ export default function OrderBuilderTabs({ token, jwt }: { token: string; jwt?: 
     setSelected(selected.map(s => s.sku === sku ? { ...s, quantity: qty } : s));
   };
 
+  const updatePrice = (sku: string, price: number) => {
+    if (price < 0) return;
+    setSelected(selected.map(s => s.sku === sku ? { ...s, unit_price: price } : s));
+  };
+
   const createRemisionOrder = async () => {
     if (!clientId || selected.length === 0) return;
     setSaving(true);
@@ -239,7 +244,10 @@ export default function OrderBuilderTabs({ token, jwt }: { token: string; jwt?: 
                       <span className="text-sm font-mono w-8 text-center">{item.quantity}</span>
                       <button onClick={() => updateQty(item.sku, item.quantity + 1)}
                         className="w-6 h-6 flex items-center justify-center bg-gray-100 rounded text-sm hover:bg-gray-200">+</button>
-                      <span className="text-xs text-gray-400 ml-2">{item.unit} × ${item.unit_price}</span>
+                      <span className="text-xs text-gray-400 ml-2">{item.unit} × $</span>
+                      <input type="number" value={item.unit_price}
+                        onChange={e => updatePrice(item.sku, parseFloat(e.target.value) || 0)}
+                        className="w-16 px-1.5 py-0.5 border border-gray-200 rounded text-xs text-right focus:outline-none focus:border-indigo-500" />
                       <span className="text-xs font-medium text-indigo-600 ml-auto">${item.quantity * item.unit_price}</span>
                       <button onClick={() => removeItem(item.sku)} className="ml-2 text-gray-400 hover:text-red-500">
                         <X className="w-3.5 h-3.5" />
