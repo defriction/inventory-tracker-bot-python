@@ -885,6 +885,8 @@ async def create_client(
         session.commit()
         return {"status": "created", "id": client.id}
     except Exception as e:
+        import traceback
+        print(f"REMISION ERROR: {traceback.format_exc()}", flush=True)
         session.rollback()
         raise HTTPException(status_code=500, detail=str(e))
     finally:
@@ -912,6 +914,8 @@ async def update_client(
     except HTTPException:
         raise
     except Exception as e:
+        import traceback
+        print(f"REMISION ERROR: {traceback.format_exc()}", flush=True)
         session.rollback()
         raise HTTPException(status_code=500, detail=str(e))
     finally:
@@ -937,6 +941,8 @@ async def delete_client(
     except HTTPException:
         raise
     except Exception as e:
+        import traceback
+        print(f"REMISION ERROR: {traceback.format_exc()}", flush=True)
         session.rollback()
         raise HTTPException(status_code=500, detail=str(e))
     finally:
@@ -955,7 +961,7 @@ class RemisionItemSchema(BaseModel):
 
 class RemisionCreateSchema(BaseModel):
     client_id: int
-    items: list[RemisionItemSchema]
+    items: List[RemisionItemSchema]
     notes: str = ""
 
 
@@ -1014,6 +1020,7 @@ async def create_remision(
     inventory_service: InventoryService = Depends(get_inventory_service)
 ):
     """Crea una remision y descuenta stock del inventario."""
+    print("DEBUG create_remision called", flush=True)
     from app.database_sa import get_session
     from app.models import Remision, RemisionItem, Client
     session = get_session(inventory_service.tenant_id)
@@ -1068,6 +1075,8 @@ async def create_remision(
     except HTTPException:
         raise
     except Exception as e:
+        import traceback
+        print(f"REMISION ERROR: {traceback.format_exc()}", flush=True)
         session.rollback()
         raise HTTPException(status_code=500, detail=str(e))
     finally:
