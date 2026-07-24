@@ -109,7 +109,9 @@ export default function Home() {
 
   if (!isAuthenticated) return <LoginPage onLogin={handleLogin} loading={loading} error={error} />;
 
-  const visibleNav = navItems.filter(n => !n.adminOnly || isAdmin);
+  const visibleNav = isAdmin
+    ? navItems.filter(n => n.adminOnly)
+    : navItems.filter(n => !n.adminOnly);
 
   return (
     <div className="min-h-screen bg-[#f5f6f8]">
