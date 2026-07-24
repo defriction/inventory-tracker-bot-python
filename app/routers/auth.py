@@ -3,7 +3,6 @@ Auth router — login endpoint that validates token and returns JWT.
 """
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from app.core.config import settings
 from app.core.auth import create_token
 from app.services.factory import get_tenant_service
 
@@ -33,18 +32,10 @@ def login(data: LoginRequest):
 
     try:
         tenant_service = get_tenant_service()
-
-        if settings.STORAGE_BACKEND == "sqlite":
-            info = tenant_service.validate_token(data.token)
-            if not info:
-                raise HTTPException(status_code=401, detail="Token invalido")
-            tenant_id = info["tenant_id"]
-        else:
-            cell = tenant_service.admin_sheet.find(data.token)
-            if not cell:
-                raise HTTPException(status_code=401, detail="Token invalido")
-            row = tenant_service.admin_sheet.row_values(cell.row)
-            tenant_id = row[1]
+        info = tenant_service.validate_token(data.token)
+        if not info:
+            raise HTTPException(status_code=401, detail="Token invalido")
+        tenant_id = info["tenant_id"]
 
     except HTTPException:
         raise

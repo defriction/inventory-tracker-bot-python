@@ -31,3 +31,7 @@ front/out/
 
 # Graphify cache
 graphify-out/
+
+# SQLite databases (live on VPS, never in repo)
+*.db
+data/

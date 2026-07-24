@@ -82,26 +82,14 @@ async def get_current_tenant(
             "sheet_id": cached.get("sheet_id", ""),
         }
 
-    # Cache miss — look up in DB (SQLite or Google Sheets)
+    # Cache miss — look up in SQLite
     try:
         from app.services.factory import get_tenant_service
         tenant_service = get_tenant_service()
 
-        if settings.STORAGE_BACKEND == "sqlite":
-            info = tenant_service.validate_token(original_token)
-            if not info:
-                raise HTTPException(status_code=401, detail="Token invalido")
-        else:
-            cell = tenant_service.admin_sheet.find(original_token)
-            if not cell:
-                raise HTTPException(status_code=401, detail="Token invalido")
-            row = tenant_service.admin_sheet.row_values(cell.row)
-            info = {
-                "tenant_id": row[1],
-                "token": original_token,
-                "pyme_name": row[2],
-                "sheet_id": row[3],
-            }
+        info = tenant_service.validate_token(original_token)
+        if not info:
+            raise HTTPException(status_code=401, detail="Token invalido")
 
         tenant_id = tenant_id or info["tenant_id"]
         info["tenant_id"] = tenant_id
