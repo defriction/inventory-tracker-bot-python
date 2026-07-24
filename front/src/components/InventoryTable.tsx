@@ -32,8 +32,6 @@ export default function InventoryTable({ token, jwt }: { token: string; jwt?: st
 
   useEffect(() => {
     fetchProducts(token, jwt);
-    const interval = setInterval(() => fetchProducts(token, jwt), 60000);
-    return () => clearInterval(interval);
   }, [token, jwt]);
 
   const startEdit = (p: Product) => {

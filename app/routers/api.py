@@ -7,6 +7,7 @@ from app.services.analytics_service import AnalyticsService
 from app.services.factory import get_inventory_service as _get_inventory_service
 from app.core.config import settings
 from app.core.auth import get_current_tenant
+from app.core.database import get_conn
 
 router = APIRouter(
     prefix='/api',
@@ -622,4 +623,89 @@ async def receive_order(
 
 
     return {"status": "ok", "messages": messages}
+
+
+# ── Suppliers ──
+
+class SupplierSchema(BaseModel):
+    name: str
+    contact: str = ""
+    phone: str = ""
+    email: str = ""
+    address: str = ""
+    notes: str = ""
+
+class SupplierUpdateSchema(BaseModel):
+    name: Optional[str] = None
+    contact: Optional[str] = None
+    phone: Optional[str] = None
+    email: Optional[str] = None
+    address: Optional[str] = None
+    notes: Optional[str] = None
+
+
+@router.get('/suppliers')
+async def list_suppliers(
+    inventory_service: InventoryService = Depends(get_inventory_service)
+):
+    """Lista todos los proveedores del tenant."""
+    with get_conn(inventory_service.tenant_id) as conn:
+        rows = conn.execute(
+            "SELECT id, name, contact, phone, email, address, notes, created_at FROM suppliers ORDER BY name"
+        ).fetchall()
+    return {"suppliers": [dict(r) for r in rows]}
+
+
+@router.post('/suppliers')
+async def create_supplier(
+    data: SupplierSchema,
+    inventory_service: InventoryService = Depends(get_inventory_service)
+):
+    """Crea un nuevo proveedor."""
+    with get_conn(inventory_service.tenant_id) as conn:
+        cur = conn.execute(
+            "INSERT INTO suppliers (name, contact, phone, email, address, notes) VALUES (?, ?, ?, ?, ?, ?)",
+            (data.name, data.contact, data.phone, data.email, data.address, data.notes)
+        )
+        conn.commit()
+    return {"status": "created", "id": cur.lastrowid}
+
+
+@router.patch('/suppliers/{supplier_id}')
+async def update_supplier(
+    supplier_id: int,
+    updates: SupplierUpdateSchema,
+    inventory_service: InventoryService = Depends(get_inventory_service)
+):
+    """Actualiza un proveedor existente."""
+    with get_conn(inventory_service.tenant_id) as conn:
+        existing = conn.execute("SELECT id FROM suppliers WHERE id = ?", (supplier_id,)).fetchone()
+        if not existing:
+            raise HTTPException(status_code=404, detail="Proveedor no encontrado")
+
+        update_data = updates.dict(exclude_unset=True)
+        if not update_data:
+            return {"status": "unchanged"}
+
+        set_clause = ", ".join(f"{k} = ?" for k in update_data)
+        set_clause += ", updated_at = datetime('now','localtime')"
+        values = list(update_data.values()) + [supplier_id]
+        conn.execute(f"UPDATE suppliers SET {set_clause} WHERE id = ?", values)
+        conn.commit()
+    return {"status": "updated"}
+
+
+@router.delete('/suppliers/{supplier_id}')
+async def delete_supplier(
+    supplier_id: int,
+    inventory_service: InventoryService = Depends(get_inventory_service)
+):
+    """Elimina un proveedor."""
+    with get_conn(inventory_service.tenant_id) as conn:
+        existing = conn.execute("SELECT id FROM suppliers WHERE id = ?", (supplier_id,)).fetchone()
+        if not existing:
+            raise HTTPException(status_code=404, detail="Proveedor no encontrado")
+        conn.execute("DELETE FROM suppliers WHERE id = ?", (supplier_id,))
+        conn.commit()
+    return {"status": "deleted"}
 

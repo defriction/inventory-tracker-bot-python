@@ -6,15 +6,23 @@ function authHeaders(jwt?: string, extra?: Record<string, string>): Record<strin
   return headers;
 }
 
-/** Retry fetch on 5xx errors with exponential backoff. Max 2 retries. */
+/** Retry fetch on 5xx errors with exponential backoff. Max 2 retries. Timeout 8s. */
 async function fetchWithRetry(url: string, options: RequestInit = {}, retries = 2): Promise<Response> {
   for (let i = 0; i <= retries; i++) {
-    const res = await fetch(url, options);
-    if (res.ok || res.status < 500 || i === retries) return res;
-    await new Promise(r => setTimeout(r, 200 * (i + 1)));
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8000);
+    try {
+      const res = await fetch(url, { ...options, signal: controller.signal });
+      clearTimeout(timeout);
+      if (res.ok || res.status < 500 || i === retries) return res;
+      await new Promise(r => setTimeout(r, 200 * (i + 1)));
+    } catch (err: any) {
+      clearTimeout(timeout);
+      if (err.name === 'AbortError' && i === retries) throw new Error('Timeout');
+      if (i === retries) throw err;
+    }
   }
-  // Unreachable, but TypeScript needs it
-  return fetch(url, options);
+  throw new Error('Max retries');
 }
 
 import { Product, InventoryResponse, Stats, AlertsResponse, MovementsResponse, AnalyticsResponse } from '@/types';

@@ -6,7 +6,6 @@ import sqlite3
 import os
 import logging
 from contextlib import contextmanager
-from threading import Lock
 from typing import Optional
 
 logger = logging.getLogger(__name__)
@@ -18,25 +17,23 @@ ADMIN_DB = os.path.join(DB_DIR, "admin.db")
 
 
 class ConnectionPool:
-    """Pool of SQLite connections, one per database file. Thread-safe."""
+    """Pool of SQLite connections, one per database file."""
 
     def __init__(self):
         self._connections: dict[str, sqlite3.Connection] = {}
-        self._lock = Lock()
 
     def get(self, db_path: str) -> sqlite3.Connection:
         """Return a healthy connection for db_path, reusing or creating one."""
-        with self._lock:
-            conn = self._connections.get(db_path)
-            if conn is not None:
-                try:
-                    conn.execute("SELECT 1")
-                    return conn
-                except Exception:
-                    logger.warning(f"Dead connection for {db_path}, recreating")
-            conn = self._create_connection(db_path)
-            self._connections[db_path] = conn
-            return conn
+        conn = self._connections.get(db_path)
+        if conn is not None:
+            try:
+                conn.execute("SELECT 1")
+                return conn
+            except Exception:
+                logger.warning(f"Dead connection for {db_path}, recreating")
+        conn = self._create_connection(db_path)
+        self._connections[db_path] = conn
+        return conn
 
     def _create_connection(self, db_path: str) -> sqlite3.Connection:
         conn = sqlite3.connect(db_path, check_same_thread=False)
@@ -132,6 +129,19 @@ def init_tenant_db(tenant_id: str):
             type TEXT, sku TEXT, name TEXT, quantity INTEGER,
             user TEXT, notes TEXT,
             created_at TEXT DEFAULT (datetime('now', 'localtime'))
+        )
+    """)
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS suppliers (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            contact TEXT,
+            phone TEXT,
+            email TEXT,
+            address TEXT,
+            notes TEXT,
+            created_at TEXT DEFAULT (datetime('now', 'localtime')),
+            updated_at TEXT DEFAULT (datetime('now', 'localtime'))
         )
     """)
     conn.commit()
