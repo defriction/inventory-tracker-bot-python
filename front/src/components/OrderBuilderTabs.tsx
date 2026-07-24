@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { FileText, Truck, Users, X, Plus } from 'lucide-react';
+import { FileText, Truck, Users, X, Plus, Search } from 'lucide-react';
 import { Client, Product } from '@/types';
 import { getInventory, getClients, createClient, updateClient, deleteClient, createRemision, getRemisiones } from '@/lib/api';
 import { confirmToast } from '@/lib/confirm';
@@ -29,6 +29,7 @@ export default function OrderBuilderTabs({ token, jwt }: { token: string; jwt?: 
   const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
   const [remisiones, setRemisiones] = useState<any[]>([]);
+  const [productFilter, setProductFilter] = useState('');
 
   // Client form
   const [showClientForm, setShowClientForm] = useState(false);
@@ -152,8 +153,16 @@ export default function OrderBuilderTabs({ token, jwt }: { token: string; jwt?: 
               </h3>
               <p className="text-[10px] text-gray-400 mt-1">Click en un producto para agregarlo a la remision</p>
             </div>
+            <div className="px-5 py-2 border-b border-gray-50">
+              <div className="relative">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+                <input type="text" placeholder="Filtrar productos..." value={productFilter}
+                  onChange={e => setProductFilter(e.target.value)}
+                  className="w-full pl-8 pr-3 py-2 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-indigo-500" />
+              </div>
+            </div>
             <div className="divide-y divide-gray-50 max-h-[400px] overflow-y-auto">
-              {products.filter(p => p.stock > 0).map(p => (
+              {products.filter(p => p.stock > 0 && p.name.toLowerCase().includes(productFilter.toLowerCase())).map(p => (
                 <button key={p.sku} onClick={() => addItem(p)}
                   className="w-full text-left px-5 py-3 hover:bg-gray-50 transition-colors flex items-center justify-between">
                   <div>
