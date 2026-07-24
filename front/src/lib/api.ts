@@ -46,7 +46,7 @@ export async function deleteProduct(token: string, sku: string, jwt?: string): P
   if (!res.ok) throw new Error('Error eliminando producto');
 }
 
-export async function createProduct(token: string, product: Partial<Product>, jwt?: string): Promise<Product> {
+export async function createProduct(token: string, product: Partial<Product>, jwt?: string): Promise<{status: string; product: Product}> {
   const res = await fetchWithRetry(`${API_URL}/api/products?token=${token}`, {
     method: 'POST',
     headers: authHeaders(jwt, { 'Content-Type': 'application/json' }),
