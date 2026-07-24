@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import {
-  Bot, LayoutDashboard, Package, BarChart3, Truck, FileText, Activity, LogOut
+  Bot, LayoutDashboard, Package, BarChart3, Truck, FileText, Activity, LogOut, Shield
 } from 'lucide-react';
 import StatsCards from '@/components/StatsCards';
 import AlertsPanel from '@/components/AlertsPanel';
@@ -12,10 +12,11 @@ import AnalyticsPanel from '@/components/AnalyticsPanel';
 import OrderTracker from '@/components/OrderTracker';
 import PurchaseOrderBuilder from '@/components/PurchaseOrderBuilder';
 import UsageStats from '@/components/UsageStats';
+import AdminPanel from '@/components/AdminPanel';
 import LoginPage from '@/components/LoginPage';
 import PwaInstallBanner from '@/components/PwaInstallBanner';
 
-type Tab = 'dashboard' | 'inventory' | 'analytics' | 'orders' | 'po_builder' | 'usage';
+type Tab = 'dashboard' | 'inventory' | 'analytics' | 'orders' | 'po_builder' | 'usage' | 'admin';
 
 const navItems: { id: Tab; label: string; icon: any; adminOnly?: boolean }[] = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -24,6 +25,7 @@ const navItems: { id: Tab; label: string; icon: any; adminOnly?: boolean }[] = [
   { id: 'orders', label: 'Pedidos', icon: Truck },
   { id: 'po_builder', label: 'Armar Pedido', icon: FileText },
   { id: 'usage', label: 'Uso', icon: Activity, adminOnly: true },
+  { id: 'admin', label: 'Admin', icon: Shield, adminOnly: true },
 ];
 
 export default function Home() {
@@ -199,6 +201,9 @@ export default function Home() {
         </div>
         <div className={activeTab === 'usage' ? '' : 'hidden'}>
           <UsageStats token={token} jwt={jwt} />
+        </div>
+        <div className={activeTab === 'admin' ? '' : 'hidden'}>
+          <AdminPanel jwt={jwt} />
         </div>
       </main>
     </div>

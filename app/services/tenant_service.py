@@ -136,3 +136,44 @@ class TenantService:
         except Exception as e:
             logger.error(f"Error vinculando: {e}")
             return False, "Error técnico al vincular cuenta\\."
+
+    def list_all(self):
+        """List all tenants."""
+        try:
+            with get_admin_conn() as conn:
+                rows = conn.execute(
+                    "SELECT tenant_id, pyme_name, token, telegram_id, business_type, created_at FROM tenants ORDER BY created_at DESC"
+                ).fetchall()
+            return [
+                {
+                    "tenant_id": r["tenant_id"],
+                    "pyme_name": r["pyme_name"],
+                    "token": r["token"],
+                    "telegram_id": r["telegram_id"] or "",
+                    "business_type": r["business_type"] or "",
+                    "created_at": r["created_at"] or "",
+                }
+                for r in rows
+            ]
+        except Exception as e:
+            logger.error(f"Error listando tenants: {e}")
+            return []
+
+    def delete_tenant(self, tenant_id: str):
+        """Delete a tenant and its inventory database."""
+        try:
+            import os
+            from app.core.database import get_db_path
+
+            with get_admin_conn() as conn:
+                conn.execute("DELETE FROM tenants WHERE tenant_id = ?", (tenant_id,))
+
+            # Remove inventory DB file
+            db_path = get_db_path(tenant_id)
+            if os.path.exists(db_path):
+                os.remove(db_path)
+
+            return True
+        except Exception as e:
+            logger.error(f"Error eliminando tenant: {e}")
+            return False
