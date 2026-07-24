@@ -19,12 +19,12 @@ router = APIRouter(
 class ProductSchema(BaseModel):
     uuid: str = ""
     sku: str = ""
-    name: str
-    category: str
-    stock: int
-    unit: str
-    cost: float
-    price: float
+    name: str = ""
+    category: str = "General"
+    stock: int = 0
+    unit: str = "UND"
+    cost: float = 0
+    price: float = 0
     expiration_date: Optional[str] = ""
     location: Optional[str] = ""
     invima: Optional[str] = ""
