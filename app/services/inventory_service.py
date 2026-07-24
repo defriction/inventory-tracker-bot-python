@@ -68,7 +68,7 @@ class SheetAdapter:
         with self._conn() as conn:
             cols = ', '.join(self._col_names)
             row = conn.execute(
-                f"SELECT {cols} FROM {self._table} ORDER BY rowid LIMIT 1 OFFSET ?",
+                f"SELECT {cols} FROM {self._table} WHERE rowid = ?",
                 (row_idx - 1,)
             ).fetchone()
         if row:
@@ -80,7 +80,7 @@ class SheetAdapter:
         col_name = self._col_names[col_idx - 1] if col_idx <= len(self._col_names) else 'uuid'
         with self._conn() as conn:
             val = conn.execute(
-                f"SELECT {col_name} FROM {self._table} ORDER BY rowid LIMIT 1 OFFSET ?",
+                f"SELECT {col_name} FROM {self._table} WHERE rowid = ?",
                 (row_idx - 1,)
             ).fetchone()
         return _Cell(val[0] if val else None)
@@ -91,7 +91,7 @@ class SheetAdapter:
         with self._conn() as conn:
             # Find the actual rowid for the given 1-indexed position
             target = conn.execute(
-                "SELECT rowid FROM {} ORDER BY rowid LIMIT 1 OFFSET ?".format(self._table),
+                "SELECT rowid FROM {} WHERE rowid = ?".format(self._table),
                 (row_idx - 1,)
             ).fetchone()
             if target:
@@ -223,7 +223,7 @@ class InventoryService:
         """Delete a product by 1-indexed row position."""
         with get_conn(self.tenant_id) as conn:
             product = conn.execute(
-                "SELECT rowid, sku, name FROM products ORDER BY rowid LIMIT 1 OFFSET ?",
+                "SELECT rowid, sku, name FROM products WHERE rowid = ?",
                 (row_idx - 1,)
             ).fetchone()
             if product:
@@ -282,7 +282,7 @@ class InventoryService:
         logger.info(f"Procesando venta: {name} | Cantidad: {qty}")
         with get_conn(self.tenant_id) as conn:
             product = conn.execute(
-                "SELECT sku, stock FROM products ORDER BY rowid LIMIT 1 OFFSET ?",
+                "SELECT sku, stock FROM products WHERE rowid = ?",
                 (row_idx - 1,)
             ).fetchone()
             if not product:
@@ -294,7 +294,7 @@ class InventoryService:
 
             new_stock = current_stock - qty
             conn.execute(
-                "UPDATE products SET stock = ?, updated_at = datetime('now','localtime') WHERE rowid = (SELECT rowid FROM products ORDER BY rowid LIMIT 1 OFFSET ?)",
+                "UPDATE products SET stock = ?, updated_at = datetime('now','localtime') WHERE rowid = (SELECT rowid FROM products WHERE rowid = ?)",
                 (new_stock, row_idx - 1)
             )
             sku = product['sku']
@@ -309,7 +309,7 @@ class InventoryService:
         logger.info(f"Procesando compra: {name} | Cantidad: {qty}")
         with get_conn(self.tenant_id) as conn:
             product = conn.execute(
-                "SELECT sku, stock FROM products ORDER BY rowid LIMIT 1 OFFSET ?",
+                "SELECT sku, stock FROM products WHERE rowid = ?",
                 (row_idx - 1,)
             ).fetchone()
             if not product:
@@ -317,7 +317,7 @@ class InventoryService:
 
             new_stock = product['stock'] + qty
             conn.execute(
-                "UPDATE products SET stock = ?, updated_at = datetime('now','localtime') WHERE rowid = (SELECT rowid FROM products ORDER BY rowid LIMIT 1 OFFSET ?)",
+                "UPDATE products SET stock = ?, updated_at = datetime('now','localtime') WHERE rowid = (SELECT rowid FROM products WHERE rowid = ?)",
                 (new_stock, row_idx - 1)
             )
             sku = product['sku']
@@ -331,7 +331,7 @@ class InventoryService:
         logger.info(f"Procesando ajuste: {name} | Cantidad: {qty}")
         with get_conn(self.tenant_id) as conn:
             product = conn.execute(
-                "SELECT sku, stock FROM products ORDER BY rowid LIMIT 1 OFFSET ?",
+                "SELECT sku, stock FROM products WHERE rowid = ?",
                 (row_idx - 1,)
             ).fetchone()
             if not product:
@@ -339,7 +339,7 @@ class InventoryService:
 
             new_stock = max(0, product['stock'] + qty)
             conn.execute(
-                "UPDATE products SET stock = ?, updated_at = datetime('now','localtime') WHERE rowid = (SELECT rowid FROM products ORDER BY rowid LIMIT 1 OFFSET ?)",
+                "UPDATE products SET stock = ?, updated_at = datetime('now','localtime') WHERE rowid = (SELECT rowid FROM products WHERE rowid = ?)",
                 (new_stock, row_idx - 1)
             )
             sku = product['sku']
@@ -353,7 +353,7 @@ class InventoryService:
         logger.info(f"Actualizando producto en fila {row_idx}: {intent}")
         with get_conn(self.tenant_id) as conn:
             product = conn.execute(
-                "SELECT rowid, name, sku, stock FROM products ORDER BY rowid LIMIT 1 OFFSET ?",
+                "SELECT rowid, name, sku, stock FROM products WHERE rowid = ?",
                 (row_idx - 1,)
             ).fetchone()
             if not product:
@@ -541,7 +541,7 @@ class InventoryService:
             elif action == "BUSCAR":
                 with get_conn(self.tenant_id) as conn:
                     p = conn.execute(
-                        "SELECT name, sku, category, stock, unit, price, cost, expiration_date, location, invima, lote FROM products ORDER BY rowid LIMIT 1 OFFSET ?",
+                        "SELECT name, sku, category, stock, unit, price, cost, expiration_date, location, invima, lote FROM products WHERE rowid = ?",
                         (row_idx - 1,)
                     ).fetchone()
                 if not p:
