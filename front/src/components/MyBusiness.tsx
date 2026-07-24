@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Building, Truck, History, Package, Users, TrendingUp, AlertTriangle, FileText, Edit3, X, Check } from 'lucide-react';
+import { Building, Truck, History, Package, Users, TrendingUp, AlertTriangle, FileText, Edit3, X as XIcon, Check } from 'lucide-react';
 import { getRemisiones } from '@/lib/api';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
