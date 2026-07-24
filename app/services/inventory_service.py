@@ -538,14 +538,14 @@ class InventoryService:
                 return self._handle_adjustment(row_idx, real_name, qty, user_name)
             elif action == "ACTUALIZAR":
                 return self._handle_update(row_idx, real_name, intent)
-            elif action == "BUSCAR":
+            elif action == "BUSCAR" or action == "CONSULTA":
                 with get_conn(self.tenant_id) as conn:
                     p = conn.execute(
                         "SELECT name, sku, category, stock, unit, price, cost, expiration_date, location, invima, lote FROM products WHERE rowid = ?",
                         (row_idx,)
                     ).fetchone()
                 if not p:
-                    return "⚠️ Producto no encontrado."
+                    return "⚠️ Producto no encontrado\\."
                 exp = f"\\n📅 Vence: {self._escape(p['expiration_date'])}" if p['expiration_date'] else ""
                 loc = f"\\n📍 Ubicación: {self._escape(p['location'])}" if p['location'] else ""
                 inv = f"\\n🏥 INVIMA: {self._escape(p['invima'])}" if p['invima'] else ""
@@ -559,8 +559,8 @@ class InventoryService:
                     f"{exp}{loc}{inv}{lot}"
                 )
             else:
-                return "🤔 No entendí la acción."
+                return "🤔 No entendí la acción\\."
 
         except Exception as e:
             logger.error(f"Error en process_instruction: {e}")
-            return "❌ Ocurrió un error procesando tu solicitud."
+            return "❌ Ocurrió un error procesando tu solicitud\\."
