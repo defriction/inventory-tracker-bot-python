@@ -518,7 +518,8 @@ class InventoryService:
                 # Product not found — create it if intent suggests it
                 if action in ("VENDER", "COMPRAR", "CREAR") or intent.get('precio'):
                     return self._create_product(
-                        name=product_name, price=price, initial_stock=qty if action == "COMPRAR" else 0,
+                        name=product_name, price=price,
+                        initial_stock=qty if action in ("COMPRAR", "CREAR") else 0,
                         user=user_name, category=category, unit=unit,
                         expiration_date=expiration_date, location=location,
                         purchase_price=purchase_price, invima=invima, lote=lote,
@@ -530,6 +531,8 @@ class InventoryService:
             if action == "VENDER":
                 return self._handle_sale(row_idx, real_name, qty, user_name)
             elif action == "COMPRAR":
+                return self._handle_purchase(row_idx, real_name, qty, user_name)
+            elif action == "CREAR":
                 return self._handle_purchase(row_idx, real_name, qty, user_name)
             elif action == "AJUSTAR":
                 return self._handle_adjustment(row_idx, real_name, qty, user_name)
