@@ -69,7 +69,7 @@ class SheetAdapter:
             cols = ', '.join(self._col_names)
             row = conn.execute(
                 f"SELECT {cols} FROM {self._table} WHERE rowid = ?",
-                (row_idx - 1,)
+                (row_idx,)
             ).fetchone()
         if row:
             return [str(v) if v is not None else '' for v in row]
@@ -81,7 +81,7 @@ class SheetAdapter:
         with self._conn() as conn:
             val = conn.execute(
                 f"SELECT {col_name} FROM {self._table} WHERE rowid = ?",
-                (row_idx - 1,)
+                (row_idx,)
             ).fetchone()
         return _Cell(val[0] if val else None)
 
@@ -92,7 +92,7 @@ class SheetAdapter:
             # Find the actual rowid for the given 1-indexed position
             target = conn.execute(
                 "SELECT rowid FROM {} WHERE rowid = ?".format(self._table),
-                (row_idx - 1,)
+                (row_idx,)
             ).fetchone()
             if target:
                 conn.execute(
@@ -283,7 +283,7 @@ class InventoryService:
         with get_conn(self.tenant_id) as conn:
             product = conn.execute(
                 "SELECT sku, stock FROM products WHERE rowid = ?",
-                (row_idx - 1,)
+                (row_idx,)
             ).fetchone()
             if not product:
                 return f"⚠️ Producto no encontrado\\."
@@ -294,8 +294,8 @@ class InventoryService:
 
             new_stock = current_stock - qty
             conn.execute(
-                "UPDATE products SET stock = ?, updated_at = datetime('now','localtime') WHERE rowid = (SELECT rowid FROM products WHERE rowid = ?)",
-                (new_stock, row_idx - 1)
+                "UPDATE products SET stock = ?, updated_at = datetime('now','localtime') WHERE rowid = ?",
+                (new_stock, row_idx)
             )
             sku = product['sku']
 
@@ -310,15 +310,15 @@ class InventoryService:
         with get_conn(self.tenant_id) as conn:
             product = conn.execute(
                 "SELECT sku, stock FROM products WHERE rowid = ?",
-                (row_idx - 1,)
+                (row_idx,)
             ).fetchone()
             if not product:
                 return f"⚠️ Producto no encontrado\\."
 
             new_stock = product['stock'] + qty
             conn.execute(
-                "UPDATE products SET stock = ?, updated_at = datetime('now','localtime') WHERE rowid = (SELECT rowid FROM products WHERE rowid = ?)",
-                (new_stock, row_idx - 1)
+                "UPDATE products SET stock = ?, updated_at = datetime('now','localtime') WHERE rowid = ?",
+                (new_stock, row_idx)
             )
             sku = product['sku']
 
@@ -332,15 +332,15 @@ class InventoryService:
         with get_conn(self.tenant_id) as conn:
             product = conn.execute(
                 "SELECT sku, stock FROM products WHERE rowid = ?",
-                (row_idx - 1,)
+                (row_idx,)
             ).fetchone()
             if not product:
                 return f"⚠️ Producto no encontrado\\."
 
             new_stock = max(0, product['stock'] + qty)
             conn.execute(
-                "UPDATE products SET stock = ?, updated_at = datetime('now','localtime') WHERE rowid = (SELECT rowid FROM products WHERE rowid = ?)",
-                (new_stock, row_idx - 1)
+                "UPDATE products SET stock = ?, updated_at = datetime('now','localtime') WHERE rowid = ?",
+                (new_stock, row_idx)
             )
             sku = product['sku']
 
@@ -354,7 +354,7 @@ class InventoryService:
         with get_conn(self.tenant_id) as conn:
             product = conn.execute(
                 "SELECT rowid, name, sku, stock FROM products WHERE rowid = ?",
-                (row_idx - 1,)
+                (row_idx,)
             ).fetchone()
             if not product:
                 return f"⚠️ Producto no encontrado\\."
@@ -542,7 +542,7 @@ class InventoryService:
                 with get_conn(self.tenant_id) as conn:
                     p = conn.execute(
                         "SELECT name, sku, category, stock, unit, price, cost, expiration_date, location, invima, lote FROM products WHERE rowid = ?",
-                        (row_idx - 1,)
+                        (row_idx,)
                     ).fetchone()
                 if not p:
                     return "⚠️ Producto no encontrado."
