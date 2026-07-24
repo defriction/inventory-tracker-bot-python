@@ -34,4 +34,6 @@ graphify-out/
 
 # SQLite databases (live on VPS, never in repo)
 *.db
-data/
+data/.graphify_*
+merge_*_inc.py
+sem*.json
