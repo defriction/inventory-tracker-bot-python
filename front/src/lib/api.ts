@@ -25,7 +25,7 @@ async function fetchWithRetry(url: string, options: RequestInit = {}, retries = 
   throw new Error('Max retries');
 }
 
-import { Product, InventoryResponse, Stats, AlertsResponse, MovementsResponse, AnalyticsResponse, SuppliersResponse, CustomColumn } from '@/types';
+import { Product, InventoryResponse, Stats, AlertsResponse, MovementsResponse, AnalyticsResponse, SuppliersResponse, CustomColumn, ClientsResponse, Client, Remision } from '@/types';
 
 export async function getInventory(tenantToken: string, jwt?: string): Promise<InventoryResponse> {
   const res = await fetchWithRetry(`${API_URL}/api/inventory?token=${tenantToken}`, {
@@ -171,4 +171,64 @@ export async function deleteCustomColumn(token: string, id: number, jwt?: string
     headers: authHeaders(jwt),
   });
   if (!res.ok) throw new Error('Error eliminando columna');
+}
+
+
+// ── Clients ──
+
+export async function getClients(token: string, jwt?: string): Promise<ClientsResponse> {
+  const res = await fetchWithRetry(`${API_URL}/api/clients?token=${token}`, {
+    cache: 'no-store',
+    headers: authHeaders(jwt),
+  });
+  if (!res.ok) throw new Error('Error cargando clientes');
+  return res.json();
+}
+
+export async function createClient(token: string, data: any, jwt?: string): Promise<any> {
+  const res = await fetchWithRetry(`${API_URL}/api/clients?token=${token}`, {
+    method: 'POST', cache: 'no-store',
+    headers: authHeaders(jwt, { 'Content-Type': 'application/json' }),
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error('Error creando cliente');
+  return res.json();
+}
+
+export async function updateClient(token: string, id: number, data: any, jwt?: string): Promise<any> {
+  const res = await fetchWithRetry(`${API_URL}/api/clients/${id}?token=${token}`, {
+    method: 'PATCH', cache: 'no-store',
+    headers: authHeaders(jwt, { 'Content-Type': 'application/json' }),
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error('Error actualizando cliente');
+  return res.json();
+}
+
+export async function deleteClient(token: string, id: number, jwt?: string): Promise<any> {
+  const res = await fetchWithRetry(`${API_URL}/api/clients/${id}?token=${token}`, {
+    method: 'DELETE', cache: 'no-store',
+    headers: authHeaders(jwt),
+  });
+  if (!res.ok) throw new Error('Error eliminando cliente');
+}
+
+// ── Remisiones ──
+
+export async function getRemisiones(token: string, jwt?: string): Promise<{remisiones: Remision[]}> {
+  const res = await fetchWithRetry(`${API_URL}/api/remisiones?token=${token}`, {
+    cache: 'no-store', headers: authHeaders(jwt),
+  });
+  if (!res.ok) throw new Error('Error cargando remisiones');
+  return res.json();
+}
+
+export async function createRemision(token: string, data: any, jwt?: string): Promise<any> {
+  const res = await fetchWithRetry(`${API_URL}/api/remisiones?token=${token}`, {
+    method: 'POST', cache: 'no-store',
+    headers: authHeaders(jwt, { 'Content-Type': 'application/json' }),
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error('Error creando remision');
+  return res.json();
 }

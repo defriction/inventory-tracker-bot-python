@@ -10,7 +10,7 @@ import RecentMovements from '@/components/RecentMovements';
 import InventoryTable from '@/components/InventoryTable';
 import AnalyticsPanel from '@/components/AnalyticsPanel';
 import OrderTracker from '@/components/OrderTracker';
-import PurchaseOrderBuilder from '@/components/PurchaseOrderBuilder';
+import OrderBuilderTabs from '@/components/OrderBuilderTabs';
 import UsageStats from '@/components/UsageStats';
 import AdminPanel from '@/components/AdminPanel';
 import LoginPage from '@/components/LoginPage';
@@ -193,7 +193,7 @@ export default function Home() {
           <OrderTracker token={token} jwt={jwt} />
         </div>
         <div className={activeTab === 'po_builder' ? '' : 'hidden'}>
-          <PurchaseOrderBuilder token={token} jwt={jwt} />
+          <OrderBuilderTabs token={token} jwt={jwt} />
         </div>
         <div className={activeTab === 'usage' ? '' : 'hidden'}>
           <UsageStats token={token} jwt={jwt} />

@@ -306,3 +306,39 @@ export interface Supplier {
 export interface SuppliersResponse {
   suppliers: Supplier[];
 }
+
+
+export interface Client {
+  id: number;
+  name: string;
+  contact: string;
+  phone: string;
+  email: string;
+  address: string;
+  notes: string;
+  created_at: string;
+}
+
+export interface ClientsResponse {
+  clients: Client[];
+}
+
+export interface RemisionItem {
+  product_sku: string;
+  product_name: string;
+  quantity: number;
+  unit: string;
+  unit_price: number;
+  subtotal: number;
+}
+
+export interface Remision {
+  id: number;
+  uid: string;
+  client_name: string;
+  total_amount: number;
+  notes: string;
+  created_at: string;
+  item_count: number;
+  items?: RemisionItem[];
+}
