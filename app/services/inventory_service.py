@@ -270,7 +270,7 @@ class InventoryService:
 
         return (f"✅ *Producto Creado*\n"
                 f"🛒 {self._escape(name)}\n"
-                f"📂 Cat: {self._escape(category)} | 📦 Unidad: {self._escape(unit)}\n"
+                f"📂 Cat: {self._escape(category)} \| 📦 Unidad: {self._escape(unit)}\n"
                 f"💰 Costo: ${self._escape(cost_val)}\n"
                 f"🏷️ Precio: ${self._escape(price_val)}{exp_msg}"
                 f"{details_msg}\n"
@@ -426,7 +426,7 @@ class InventoryService:
             rows = conn.execute(query, params).fetchall()
 
         if not rows:
-            return "📭 No se encontraron productos con ese criterio."
+            return "📭 No se encontraron productos con ese criterio\\."
 
         lines = [f"📋 *Resultados* ({len(rows)} productos):"]
         for r in rows:
@@ -435,7 +435,7 @@ class InventoryService:
             loc = f" | 📍 {r['location']}" if r['location'] else ""
             lines.append(
                 f"• {self._escape(r['name'])} — {stock_icon} {r['stock']} {r['unit']}"
-                f"\\n  `{self._escape(r['sku'])}` | 📂 {self._escape(r['category'])}{exp}{loc}"
+                f"\\n  `{self._escape(r['sku'])}` \| 📂 {self._escape(r['category'])}{exp}{loc}"
             )
 
         return "\n".join(lines)
@@ -564,8 +564,8 @@ class InventoryService:
                 return (
                     f"🔎 *{self._escape(p['name'])}*\\n"
                     f"🔢 SKU: `{self._escape(p['sku'])}`\\n"
-                    f"📂 Categoría: {self._escape(p['category'])} | 📦 Unidad: {self._escape(p['unit'])}\\n"
-                    f"📊 Stock: {self._escape(p['stock'])} | 💰 Precio: ${self._escape(p['price'])}\\n"
+                    f"📂 Categoría: {self._escape(p['category'])} \| 📦 Unidad: {self._escape(p['unit'])}\\n"
+                    f"📊 Stock: {self._escape(p['stock'])} \| 💰 Precio: ${self._escape(p['price'])}\\n"
                     f"💵 Costo: ${self._escape(p['cost'])}"
                     f"{exp}{loc}{inv}{lot}"
                 )
