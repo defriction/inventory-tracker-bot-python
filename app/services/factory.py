@@ -12,6 +12,7 @@ class _DummyInventoryService:
         self.inventory_sheet = _DummySheet()
         self.history_sheet = _DummySheet()
         self.pending_multi_match = None
+        self.tenant_id = "admin"
 
     def _find_product_row_by_keyword(self, *args, **kwargs):
         return None, None
