@@ -57,8 +57,13 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
     setTimeout(() => set({ highlightSku: '' }), 2000);
 
     try {
-      await apiCreateProduct(token, data, jwt);
-      await get().fetchProducts(token, jwt); // Replace with server data
+      const result = await apiCreateProduct(token, data, jwt);
+      // Replace optimistic with server product (has real UUID + SKU)
+      set(state => ({
+        products: state.products.map(p =>
+          p.sku === tempSku ? result.product : p
+        ),
+      }));
       toast.success('Producto creado');
     } catch {
       // Rollback

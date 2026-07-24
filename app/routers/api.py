@@ -89,7 +89,14 @@ async def create_product(
         inventory_service.inventory_sheet.append_row(row)
         inventory_service._log_movement("CREACION", sku, data.name, data.stock, "Admin", "Creacion manual")
         log.info(f"CREATE OK | sku={sku} | uuid={new_uuid}")
-        return {"status": "created", "sku": sku, "uuid": new_uuid}
+        product = {
+            "uuid": new_uuid, "sku": sku, "name": data.name,
+            "category": data.category, "stock": data.stock, "unit": data.unit,
+            "cost": data.cost, "price": data.price,
+            "expiration_date": data.expiration_date or "",
+            "location": data.location or "", "invima": data.invima or "", "lote": data.lote or ""
+        }
+        return {"status": "created", "product": product}
     except Exception as e:
         log.error(f"CREATE FAIL | {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
