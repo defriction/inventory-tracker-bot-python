@@ -162,3 +162,9 @@ def init_tenant_db(tenant_id: str):
         )
     """)
     conn.commit()
+    # SQLAlchemy tables (non-blocking)
+    try:
+        from app.database_sa import create_all
+        create_all(tenant_id)
+    except Exception:
+        pass

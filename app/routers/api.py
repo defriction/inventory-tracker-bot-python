@@ -831,3 +831,244 @@ def _save_custom_value(tenant_id: str, sku: str, column_name: str, value: any):
         )
         conn.commit()
 
+
+
+# ── Clients (SQLAlchemy) ──
+
+class ClientSchema(BaseModel):
+    name: str
+    contact: str = ""
+    phone: str = ""
+    email: str = ""
+    address: str = ""
+    notes: str = ""
+
+
+class ClientUpdateSchema(BaseModel):
+    name: Optional[str] = None
+    contact: Optional[str] = None
+    phone: Optional[str] = None
+    email: Optional[str] = None
+    address: Optional[str] = None
+    notes: Optional[str] = None
+
+
+@router.get('/clients')
+async def list_clients(
+    inventory_service: InventoryService = Depends(get_inventory_service)
+):
+    """Lista todos los clientes del tenant."""
+    from app.database_sa import get_session
+    from app.models import Client
+    session = get_session(inventory_service.tenant_id)
+    try:
+        clients = session.query(Client).order_by(Client.name).all()
+        return {"clients": [{"id": c.id, "name": c.name, "contact": c.contact,
+                "phone": c.phone, "email": c.email, "address": c.address,
+                "notes": c.notes, "created_at": str(c.created_at)} for c in clients]}
+    finally:
+        session.close()
+
+
+@router.post('/clients')
+async def create_client(
+    data: ClientSchema,
+    inventory_service: InventoryService = Depends(get_inventory_service)
+):
+    """Crea un nuevo cliente."""
+    from app.database_sa import get_session
+    from app.models import Client
+    session = get_session(inventory_service.tenant_id)
+    try:
+        client = Client(**data.dict())
+        session.add(client)
+        session.commit()
+        return {"status": "created", "id": client.id}
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        session.close()
+
+
+@router.patch('/clients/{client_id}')
+async def update_client(
+    client_id: int,
+    updates: ClientUpdateSchema,
+    inventory_service: InventoryService = Depends(get_inventory_service)
+):
+    """Actualiza un cliente."""
+    from app.database_sa import get_session
+    from app.models import Client
+    session = get_session(inventory_service.tenant_id)
+    try:
+        client = session.query(Client).filter(Client.id == client_id).first()
+        if not client:
+            raise HTTPException(status_code=404, detail="Cliente no encontrado")
+        for key, val in updates.dict(exclude_unset=True).items():
+            setattr(client, key, val)
+        session.commit()
+        return {"status": "updated"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        session.close()
+
+
+@router.delete('/clients/{client_id}')
+async def delete_client(
+    client_id: int,
+    inventory_service: InventoryService = Depends(get_inventory_service)
+):
+    """Elimina un cliente."""
+    from app.database_sa import get_session
+    from app.models import Client
+    session = get_session(inventory_service.tenant_id)
+    try:
+        client = session.query(Client).filter(Client.id == client_id).first()
+        if not client:
+            raise HTTPException(status_code=404, detail="Cliente no encontrado")
+        session.delete(client)
+        session.commit()
+        return {"status": "deleted"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        session.close()
+
+
+# ── Remisiones (SQLAlchemy) ──
+
+class RemisionItemSchema(BaseModel):
+    product_sku: str
+    product_name: str
+    quantity: int
+    unit: str = "UND"
+    unit_price: float = 0
+
+
+class RemisionCreateSchema(BaseModel):
+    client_id: int
+    items: list[RemisionItemSchema]
+    notes: str = ""
+
+
+@router.get('/remisiones')
+async def list_remisiones(
+    inventory_service: InventoryService = Depends(get_inventory_service)
+):
+    """Lista todas las remisiones del tenant."""
+    from app.database_sa import get_session
+    from app.models import Remision, Client
+    session = get_session(inventory_service.tenant_id)
+    try:
+        remisiones = session.query(Remision).order_by(Remision.created_at.desc()).all()
+        result = []
+        for r in remisiones:
+            client_name = r.client.name if r.client else ""
+            result.append({
+                "id": r.id, "uid": r.uid, "client_name": client_name,
+                "total_amount": r.total_amount, "notes": r.notes,
+                "created_at": str(r.created_at), "item_count": len(r.items)
+            })
+        return {"remisiones": result}
+    finally:
+        session.close()
+
+
+@router.get('/remisiones/{remision_id}')
+async def get_remision(
+    remision_id: int,
+    inventory_service: InventoryService = Depends(get_inventory_service)
+):
+    """Obtiene una remision con sus items."""
+    from app.database_sa import get_session
+    from app.models import Remision
+    session = get_session(inventory_service.tenant_id)
+    try:
+        r = session.query(Remision).filter(Remision.id == remision_id).first()
+        if not r:
+            raise HTTPException(status_code=404, detail="Remision no encontrada")
+        return {
+            "id": r.id, "uid": r.uid, "client_name": r.client.name if r.client else "",
+            "total_amount": r.total_amount, "notes": r.notes,
+            "created_at": str(r.created_at), "created_by": r.created_by,
+            "items": [{"product_sku": i.product_sku, "product_name": i.product_name,
+                       "quantity": i.quantity, "unit": i.unit,
+                       "unit_price": i.unit_price, "subtotal": i.subtotal} for i in r.items]
+        }
+    finally:
+        session.close()
+
+
+@router.post('/remisiones')
+async def create_remision(
+    data: RemisionCreateSchema,
+    token: str = Query(...),
+    inventory_service: InventoryService = Depends(get_inventory_service)
+):
+    """Crea una remision y descuenta stock del inventario."""
+    from app.database_sa import get_session
+    from app.models import Remision, RemisionItem, Client
+    session = get_session(inventory_service.tenant_id)
+    try:
+        # Validate client exists
+        client = session.query(Client).filter(Client.id == data.client_id).first()
+        if not client:
+            raise HTTPException(status_code=404, detail="Cliente no encontrado")
+
+        # Validate stock for each item
+        for item in data.items:
+            row_idx, _ = inventory_service._find_product_row_by_keyword(item.product_sku, exact_match=True)
+            if not row_idx:
+                raise HTTPException(status_code=404, detail=f"Producto no encontrado: {item.product_sku}")
+            current_stock = int(inventory_service.inventory_sheet.cell(row_idx, 5).value or 0)
+            if current_stock < item.quantity:
+                raise HTTPException(status_code=400, detail=f"Stock insuficiente para {item.product_name}")
+
+        # Create remision
+        total = sum(i.quantity * i.unit_price for i in data.items)
+        remision = Remision(
+            client_id=data.client_id,
+            notes=data.notes,
+            total_amount=total,
+            created_by="Web"
+        )
+        session.add(remision)
+        session.flush()  # Get remision.id
+
+        # Create items + deduct stock
+        for item in data.items:
+            ri = RemisionItem(
+                remision_id=remision.id,
+                product_sku=item.product_sku,
+                product_name=item.product_name,
+                quantity=item.quantity,
+                unit=item.unit,
+                unit_price=item.unit_price,
+                subtotal=item.quantity * item.unit_price
+            )
+            session.add(ri)
+
+            # Deduct stock
+            row_idx, _ = inventory_service._find_product_row_by_keyword(item.product_sku, exact_match=True)
+            current_stock = int(inventory_service.inventory_sheet.cell(row_idx, 5).value or 0)
+            inventory_service.inventory_sheet.update_cell(row_idx, 5, current_stock - item.quantity)
+            inventory_service._log_movement("REMISION", item.product_sku, item.product_name,
+                                            -item.quantity, "Web", f"Remision {remision.uid}")
+
+        session.commit()
+        return {"status": "created", "id": remision.id, "uid": remision.uid}
+    except HTTPException:
+        raise
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        session.close()

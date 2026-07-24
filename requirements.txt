@@ -10,3 +10,4 @@ scipy
 httpx
 reportlab
 PyJWT
+sqlalchemy
